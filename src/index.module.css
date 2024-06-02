@@ -1,0 +1,30 @@
+.appear {
+  animation: _appear .5s ease ;
+}
+
+@keyframes _appear {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+
+.toLeft {
+  animation: _toLeft .5s ease;
+}
+
+@keyframes _toLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
