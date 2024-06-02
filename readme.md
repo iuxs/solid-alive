@@ -4,18 +4,22 @@
  - pnpm add solid-alive ／ npm i solid-alive / yarn add solid-alive
 ### 描述(describe)
 - 用于 solid 组件缓存,只测试过2级路由缓存
-- 在 useAlive 中有 onActivated, onDeactivated,removeAliveElement 三个函数使用
+- AliveProvider 
+  - scrollId : 想滚动的元素id, 我用的getElementById
+  - behavior : 想 scrollId 的滚动条是 alwaysTop / savaScroll
+  - transitionEnterName : 'appear'/ 'toLeft'/...., Customizable  路由切换 的过渡动画, 但要在 App中引入 样式, import 'solid-alive/dist/styles/style.css', 自定义的css要用 @keyframes 来定义动画
+- 在 useAlive 
   - removeAliveElement: 函数, 可传一个参数, 不传就删除所有缓存 :
     removeAliveElement('/home')
   - onActivated / onDeactivated: 函数,只能传一个函数,多次调用只有最一个会调用.
     onActivated(()=> console.log('actived'))
-  - directiveSaveScroll  保存滚动条指令, 不过能不用就不用, 但组件不能使用,只能标签
-- 可记住指定元素, 但要在 AliveProvider 中加 saveScrollElement 参数, 最好唯一. 但组件内部的滚动条问题 有个指令函数,
+  - directiveSaveScroll:  保存滚动条指令, 不过能不用就不用, 但组件不能使用,只能标签!!!ref会拿不到dom
+  - resetElScroll :  重置元素的滚动条
+  - removeScrollEl :  删除元素在alive中保存的dom
 - 子父 缓存/删除 问题
   -  如果某组件下有子组件,在父的 AliveTransfer中, 
     第三个参数,为对象 写上子组件的唯一id: {children:['/childrenId','asf',...]}
   -  使用见下图, 也可用     -removeAliveElement 删除
-- 
 
 
 
@@ -26,7 +30,7 @@ import { render } from 'solid-js/web'
 import App from './App'
 import { AliveProvider } from  'solid-alive'
 const root = document.getElementById('root')
-  import 'solid-alive/dist/styles/style.css' // transition css, 
+import 'solid-alive/dist/styles/style.css' // transition css, 
 
 render(() => 
   {/* save id is client scroll,  */}
