@@ -103,7 +103,7 @@ export default function Single() {
     directiveSaveScroll,
     resetElScroll, 
   } = useAlive()
-
+  let divRef: Element | undefined = undefined
   const click = () => {
     removeAliveElement('/about') // delete '/about'; 删除 /about
     // removeAliveElement() // delete all alive element; 会删除所有缓存的组件
