@@ -26,7 +26,7 @@ import { render } from 'solid-js/web'
 import App from './App'
 import { AliveProvider } from  'solid-alive'
 const root = document.getElementById('root')
-import 'solid-alive/dist/styles/style.css' // transition css, 
+  import 'solid-alive/dist/styles/style.css' // transition css, 
 
 render(() => 
   {/* save id is client scroll,  */}
