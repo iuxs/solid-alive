@@ -1,9 +1,9 @@
-# solid-alive
+## solid-alive
 
 ### 安装(install)
  - pnpm add solid-alive ／ npm i solid-alive / yarn add solid-alive
 ### 描述(describe)
-- 用于 solid 组件缓存,只测试过2级路由缓存
+- 用于 solid 组件缓存,只测试过2级路由缓存, 有过渡动画, 可缓存组件内的滚动条
 - AliveProvider 
   - scrollId : 想滚动的元素id, 我用的getElementById
   - behavior : 想 scrollId 的滚动条是 alwaysTop / savaScroll
@@ -29,8 +29,9 @@
 import { render } from 'solid-js/web'
 import App from './App'
 import { AliveProvider } from  'solid-alive'
-const root = document.getElementById('root')
 import 'solid-alive/dist/styles/style.css' // transition css, 
+
+const root = document.getElementById('root')
 
 render(() => 
   {/* save id is client scroll,  */}
@@ -103,6 +104,7 @@ export default function Single() {
     directiveSaveScroll,
     resetElScroll, 
   } = useAlive()
+
   let divRef: Element | undefined = undefined
   const click = () => {
     removeAliveElement('/about') // delete '/about'; 删除 /about

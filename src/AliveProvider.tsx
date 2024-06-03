@@ -1,15 +1,17 @@
 import { ProveiderProps, StoreProps, NodeInfo } from './default'
 import { createStore, produce } from 'solid-js/store'
 import Context from './context'
+import { createEffect } from 'solid-js'
 /**
  * @description Alive
  * @param children jsx.element
  * @param { string } [scrollId] id,如 'root' 会在切换组件时的动作,默认saveScrollTop
  * @param { 'alwaysTop'|'saveScroll' } [behavior] dom元素滚动条会如何保持
- * @param { 'appear'|'toLeft'  } [transitionEnterName] 路由切换动画, 可以自己加
+ * @param { 'appear'|'toLeft' } [transitionEnterName] 路由切换动画, 可以自己加
  */
 export default function AliveProvider(props: ProveiderProps) {
   var [elements, setElements] = createStore<StoreProps>()
+  var scrollDom: { current: Element | null } = { current: null }
 
   // 当前正进入的id
   let closeSymbol = Symbol('close'),
@@ -46,7 +48,6 @@ export default function AliveProvider(props: ProveiderProps) {
       d[id].component = null
       d[id].dispose?.()
       d[id].dispose = null
-      d[id].owner = null
       d[id].onActivated = null
       d[id].onDeactivated = null
       d[id].scroll = null
@@ -125,10 +126,18 @@ export default function AliveProvider(props: ProveiderProps) {
     return false
   }
 
+  createEffect(() => {
+    if (props.scrollId) {
+      scrollDom.current = document.getElementById(props.scrollId)
+      !scrollDom.current &&
+        console.error(`[solid-alive] scrollId: ${props.scrollId} is null `)
+    }
+  })
+
   return (
     <Context.Provider
       value={{
-        scrollId: props.scrollId,
+        scrollDom,
         behavior: props.behavior,
         transitionEnterName: props.transitionEnterName,
         elements,

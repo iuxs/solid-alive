@@ -1,23 +1,19 @@
 import {
   JSX,
-  getOwner,
   useContext,
   createRoot,
-  runWithOwner,
   createEffect,
   onCleanup
 } from 'solid-js'
 import Context from './context'
 import { ContextProps } from './default'
-
 import styles from './index.module.css'
 
 let prevTimer = 0,
-  aniPrevTimer = 0,
-  dom: Element | null = null // dom
+  aniPrevTimer = 0
 /**
  * @description Alive 组件用的 转换函数
- * @param { string } Componet,
+ * @param { ()=> JSX.Element } Componet,
  * @param { string } id  string,自己的id 值,一定要唯一
  * @param { Array<string> } [children]  [string,...], 子组件的 id值 可不传，这样默认销毁时不会去干掉子组件，
  */
@@ -33,7 +29,7 @@ export default function AliveTransfer(
   var {
     behavior,
     elements,
-    scrollId,
+    scrollDom,
     closeSymbol,
     transitionEnterName,
     insertElement,
@@ -50,7 +46,6 @@ export default function AliveTransfer(
         component: <Component />,
         onDeactivated: null,
         onActivated: null,
-        owner: getOwner,
         scroll: { top: 0, left: 0 },
         children: Array.isArray(children) ? children : null,
         domList: null
@@ -60,35 +55,33 @@ export default function AliveTransfer(
   // cache 将scrollTop 保存, scroll: 视口将滚动到指定位置
   var scrollType = (t: 'cacheScroll' | 'scrollTo') => {
     // 当没有 指定元素,
-    if (!scrollId || !dom) return
+    if (!scrollDom.current) return
     if (t === 'cacheScroll') {
       var scroll =
         behavior === 'alwaysTop'
           ? { top: 0, left: 0 }
-          : { top: dom.scrollTop, left: dom.scrollLeft }
+          : {
+              top: scrollDom.current.scrollTop,
+              left: scrollDom.current.scrollLeft
+            }
       saveScroll(id, scroll)
     } else {
       // if (t === 'scrollTo')
       var nowDate = Date.now()
       // 用于 父子组件, 在父子组件 时, 用子的scrollTop
       if (nowDate - prevTimer > 200) {
-        const {top = 0,left = 0} = elements[id]?.scroll || {}
-        dom.scrollTop = top
-        dom.scrollLeft = left
+        const { top = 0, left = 0 } = elements[id]?.scroll || {}
+        scrollDom.current.scrollTop = top
+        scrollDom.current.scrollLeft = left
         prevTimer = nowDate
       }
     }
   }
 
   // 加动画
-  if (
-    transitionEnterName &&
-    elements[id]?.owner &&
-    Date.now() - aniPrevTimer > 200
-  ) {
+  if (transitionEnterName && Date.now() - aniPrevTimer > 200) {
     aniPrevTimer = Date.now()
-    let comp = (() => elements[id]?.component) as Function
-    let dom = comp?.()
+    let dom =  elements[id]?.component as unknown as Function
     typeof dom === 'function' && (dom = dom?.())
     if (dom instanceof HTMLElement) {
       // 加样式
@@ -104,10 +97,6 @@ export default function AliveTransfer(
   }
 
   createEffect(() => {
-    if (scrollId && !dom) {
-      dom = document.getElementById(scrollId)
-      !dom && console.error(`[solid-alive] scrollId: ${scrollId} is null `)
-    }
     elements[id].onActivated?.()
     scrollType('scrollTo')
     // 当前页面绑定的的,要保存滚动条的元素,滚动到指定位置
@@ -127,5 +116,5 @@ export default function AliveTransfer(
     )
   })
 
-  return runWithOwner(elements[id].owner, () => elements[id].component)
+  return elements[id].component
 }

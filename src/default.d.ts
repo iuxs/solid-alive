@@ -21,7 +21,6 @@ export interface ProveiderProps extends pub {
 export interface NodeInfo {
   id: string
   component: JSX.Element
-  owner: Owner | null
   scroll: {top:number,left:number} | null
   domList: Map<Element, {top:number,left:number  }> | null
   children?: Array<string> | null
@@ -36,6 +35,7 @@ export interface StoreProps {
 }
 
 export interface ContextProps extends pub {
+  scrollDom:{current:Element | null},
   elements: StoreProps
   closeSymbol: symbol
   insertElement: (d: NodeInfo) => void

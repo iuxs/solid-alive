@@ -3,7 +3,8 @@ import { ContextProps } from './default'
 
 var Context = createContext<ContextProps>({
   elements: {},
-  closeSymbol:Symbol('close'),
+  scrollDom: { current: null },
+  closeSymbol: Symbol('close'),
   insertElement: () => void 0,
   onDeactivated: () => void 0,
   onActivated: () => void 0,
