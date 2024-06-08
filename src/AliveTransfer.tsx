@@ -1,16 +1,10 @@
-import {
-  JSX,
-  useContext,
-  createRoot,
-  createEffect,
-  onCleanup
-} from 'solid-js'
+import { JSX, useContext, createRoot, createEffect, onCleanup } from 'solid-js'
 import Context from './context'
 import { ContextProps } from './default'
 import styles from './index.module.css'
 
-let prevTimer = 0,
-  aniPrevTimer = 0
+let prevTimer = 0
+
 /**
  * @description Alive 组件用的 转换函数
  * @param { ()=> JSX.Element } Componet,
@@ -33,12 +27,17 @@ export default function AliveTransfer(
     closeSymbol,
     transitionEnterName,
     insertElement,
-    saveScroll,
-    setCurrentComponentId
+    setElement,
+    setCurrentComponentId,
   } = useContext<ContextProps>(Context)
 
   if (!Reflect.has(elements, id)) {
     setCurrentComponentId(id)
+    insertElement({
+      id,
+      children: Array.isArray(children) ? new Set(children) : null
+    })
+
     createRoot(dispose => {
       insertElement({
         id,
@@ -47,9 +46,13 @@ export default function AliveTransfer(
         onDeactivated: null,
         onActivated: null,
         scroll: { top: 0, left: 0 },
-        children: Array.isArray(children) ? children : null,
         domList: null
       })
+      // 一个组件完结后 ,将重置到其父组件
+      let fatherId = Object.values(elements).find(item =>
+        item.children?.has(id)
+      )?.id
+      fatherId && setCurrentComponentId(fatherId)
     })
   }
   // cache 将scrollTop 保存, scroll: 视口将滚动到指定位置
@@ -64,7 +67,7 @@ export default function AliveTransfer(
               top: scrollDom.current.scrollTop,
               left: scrollDom.current.scrollLeft
             }
-      saveScroll(id, scroll)
+      setElement(id, 'scroll', scroll)
     } else {
       // if (t === 'scrollTo')
       var nowDate = Date.now()
@@ -78,11 +81,26 @@ export default function AliveTransfer(
     }
   }
 
+  // 这个返回 的永远是 顶级
+  var getFatherId = (id: string): string | undefined => {
+    if(elements[id].isTop) return id
+    var fatherId = Object.values(elements).find(item =>
+      item.children?.has(id)
+    )?.id
+    fatherId && (fatherId = getFatherId(fatherId))
+    return fatherId || id
+  }
+
   // 加动画
-  if (transitionEnterName && Date.now() - aniPrevTimer > 200) {
-    aniPrevTimer = Date.now()
-    let dom =  elements[id]?.component as unknown as Function
+  if (transitionEnterName) {
+    let fatherId = getFatherId(id),
+      dom
+    if (fatherId){
+      dom = elements[fatherId]?.component as unknown as Function
+      setElement(fatherId, 'isTop', true)
+    }
     typeof dom === 'function' && (dom = dom?.())
+
     if (dom instanceof HTMLElement) {
       // 加样式
       var className = styles[transitionEnterName] || transitionEnterName
@@ -97,7 +115,7 @@ export default function AliveTransfer(
   }
 
   createEffect(() => {
-    elements[id].onActivated?.()
+    elements[id].onActivated?.forEach(cb => cb())
     scrollType('scrollTo')
     // 当前页面绑定的的,要保存滚动条的元素,滚动到指定位置
     elements[id].domList?.forEach((d, el) => {
@@ -108,7 +126,7 @@ export default function AliveTransfer(
 
   onCleanup(() => {
     setCurrentComponentId(closeSymbol)
-    elements[id].onDeactivated?.()
+    elements[id].onDeactivated?.forEach(cb => cb())
     scrollType('cacheScroll')
     // 当前页面绑定的的,要保存滚动条的元素,
     elements[id].domList?.forEach((_, el, map) =>

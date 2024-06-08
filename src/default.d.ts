@@ -9,9 +9,9 @@ declare module 'solid-js' {
 }
 
 export interface pub {
-  scrollId?: string  // 保存
+  scrollId?: string // 保存
   behavior?: 'alwaysTop' | 'saveScroll'
-  transitionEnterName?: 'appear' |'toLeft'
+  transitionEnterName?: 'appear' | 'toLeft'
 }
 
 export interface ProveiderProps extends pub {
@@ -20,14 +20,19 @@ export interface ProveiderProps extends pub {
 
 export interface NodeInfo {
   id: string
-  component: JSX.Element
-  scroll: {top:number,left:number} | null
-  domList: Map<Element, {top:number,left:number  }> | null
-  children?: Array<string> | null
-  selfDom?:Element
-  dispose: (() => void) | null
-  onActivated: null | (() => void)
-  onDeactivated: null | (() => void)
+  component?: JSX.Element
+  scroll?: { top: number; left: number } | null
+  domList?: Map<Element, { top: number; left: number }> | null
+  children?: Set<string> | null
+  dispose?: (() => void) | null
+  onActivated?: null | Set<() => void>
+  onDeactivated?: null | Set<() => void>
+  isTop?: boolean
+}
+
+
+export interface SetElement {
+  <T extends keyof NodeInfo>(id: string, prop: T, v: NodeInfo[T]): void
 }
 
 export interface StoreProps {
@@ -35,14 +40,14 @@ export interface StoreProps {
 }
 
 export interface ContextProps extends pub {
-  scrollDom:{current:Element | null},
+  scrollDom: { current: Element | null }
   elements: StoreProps
   closeSymbol: symbol
   insertElement: (d: NodeInfo) => void
   onActivated: (cb: () => void) => void
   onDeactivated: (cb: () => void) => void
   removeAliveElement: (id?: string) => void
-  saveScroll: (id: string, s:{top:number,left:number}) => void
+  setElement: SetElement
   setCurrentComponentId: (id: string | symbol) => void
   saveElScroll: (dom: Element) => void // 用来 保存 某一个dom, 暂时用来保存scroll
   resetElScroll: (dom: Element) => boolean // 重置高度, 变成0

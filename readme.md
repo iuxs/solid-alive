@@ -11,8 +11,9 @@
 - 在 useAlive 
   - removeAliveElement: 函数, 可传一个参数, 不传就删除所有缓存 :
     removeAliveElement('/home')
-  - onActivated / onDeactivated: 函数,只能传一个函数,多次调用只有最一个会调用.
-    onActivated(()=> console.log('actived'))
+  -  onActivated / onDeactivated: 函数,只能传一个函数  
+  -  onActivated(()=> console.log('actived'))
+  - <table><tr><td bgcolor=#ff0>现在多个onActivated/onDeactivated 会被保存,在一个组件 内不要有多个onActivated/onDeactivated函数</td></tr></table>
   - directiveSaveScroll:  保存滚动条指令, 不过能不用就不用, 但组件不能使用,只能标签!!!ref会拿不到dom
   - resetElScroll :  重置元素的滚动条
   - removeScrollEl :  删除元素在alive中保存的dom
@@ -111,12 +112,12 @@ export default function Single() {
     // removeAliveElement() // delete all alive element; 会删除所有缓存的组件
   }
 
-  // not call 这个不会被调用
+  //todo call 这个会被调用
   onActivated(()=>{
     console.log('Single-activeated-1')
   })
  
-  // call 这个会被调用, 这个是最后一个才会被调用,缓存进入
+  //todo call 这个依然会被调用
   onActivated(()=>{
     console.log('Single-activeated-2')
   })

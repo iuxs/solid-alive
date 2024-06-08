@@ -1,4 +1,4 @@
-import { ProveiderProps, StoreProps, NodeInfo } from './default'
+import { ProveiderProps, StoreProps, NodeInfo, SetElement } from './default'
 import { createStore, produce } from 'solid-js/store'
 import Context from './context'
 import { createEffect } from 'solid-js'
@@ -16,8 +16,8 @@ export default function AliveProvider(props: ProveiderProps) {
   // 当前正进入的id
   let closeSymbol = Symbol('close'),
     currComponentId: string | symbol = closeSymbol,
-    activeCbMap: Map<string | symbol, () => void> = new Map(),
-    deActiveCbMap: Map<string | symbol, () => void> = new Map(),
+    activeCbMap: Map<string | symbol, Set<() => void>> = new Map(),
+    deActiveCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     domMap: Map<
       string | symbol,
       Map<Element, { top: number; left: number }>
@@ -32,6 +32,7 @@ export default function AliveProvider(props: ProveiderProps) {
     deActiveCbMap.delete(id)
     domMap.delete(id)
     setElements([id], {
+      ...elements[id],
       ...action,
       onActivated,
       onDeactivated,
@@ -44,7 +45,7 @@ export default function AliveProvider(props: ProveiderProps) {
     // 当缓存了的父组件被删除，　这里会删除子组件
     children?.forEach(cid => cid !== id && removeItem(cid))
     setElements(d => {
-      d[id].onDeactivated?.()
+      d[id].onDeactivated = null
       d[id].component = null
       d[id].dispose?.()
       d[id].dispose = null
@@ -54,11 +55,13 @@ export default function AliveProvider(props: ProveiderProps) {
       d[id].id = ''
       d[id].children = null
       d[id].domList = null // 它需要保存滚动条的Map 数据
+      d[id].isTop = false
       ;(d[id] as any) = null
       delete d[id]
       return d
     })
   }
+
   // id 没有就删除全部缓存的组件, id有就删除对应的id组件
   var removeAliveElement = (id?: string) => {
     if (id == null) {
@@ -72,24 +75,35 @@ export default function AliveProvider(props: ProveiderProps) {
     currComponentId = id
   }
 
-  // 设置滚动条高度
-  var saveScroll = (id: string, s: { top: number; left: number }) => {
+  // 设置属性
+  const setElement: SetElement = (id, prop, v) => {
     Reflect.has(elements, id) &&
       setElements(
         produce(d => {
-          d[id].scroll = { ...s }
+          d[id][prop] = v
         })
       )
+  }
+  var setCb = (t: 'onActivated' | 'onDeactivated', cb: () => void) => {
+    const obj = {
+      onActivated: activeCbMap,
+      onDeactivated: deActiveCbMap
+    }
+    var v = obj[t]
+    if (currComponentId !== closeSymbol) {
+      var prev = v.get(currComponentId) || new Set()
+      prev.size < 100 && prev.add(cb) && v.set(currComponentId, prev)
+    }
   }
 
   //keepAlive下  激活缓存组件
   var onActivated = (cb: () => void) => {
-    if (currComponentId !== closeSymbol) activeCbMap.set(currComponentId, cb)
+    setCb('onActivated', cb)
   }
 
   // keepalive下 暂时退出缓存组件
   var onDeactivated = (cb: () => void) => {
-    if (currComponentId !== closeSymbol) deActiveCbMap.set(currComponentId, cb)
+    setCb('onDeactivated', cb)
   }
 
   // 缓存dom, 现在暂时用于缓存高度
@@ -145,12 +159,12 @@ export default function AliveProvider(props: ProveiderProps) {
         onActivated,
         onDeactivated,
         insertElement,
-        saveScroll,
+        setElement,
         removeAliveElement,
         setCurrentComponentId,
         saveElScroll,
         resetElScroll,
-        removeScrollEl
+        removeScrollEl,
       }}
     >
       {props.children}
