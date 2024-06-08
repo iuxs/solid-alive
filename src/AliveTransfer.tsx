@@ -118,7 +118,7 @@ export default function AliveTransfer(
     elements[id]?.onActivated?.forEach(cb => cb())
     scrollType('scrollTo')
     // 当前页面绑定的的,要保存滚动条的元素,滚动到指定位置
-    elements[id].domList?.forEach((d, el) => {
+    elements[id]?.domList?.forEach((d, el) => {
       el.scrollTop = d.top
       el.scrollLeft = d.left
     })
