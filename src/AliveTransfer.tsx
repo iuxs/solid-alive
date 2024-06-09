@@ -83,7 +83,7 @@ export default function AliveTransfer(
 
   // 这个返回 的永远是 顶级
   var getFatherId = (id: string): string | undefined => {
-    if (elements[id]?.isTop) return id
+    if (elements[id].isTop) return id
     var fatherId = Object.values(elements).find(item =>
       item.children?.has(id)
     )?.id
@@ -115,10 +115,10 @@ export default function AliveTransfer(
   }
 
   createEffect(() => {
-    elements[id]?.onActivated?.forEach(cb => cb())
+    elements[id].onActivated?.forEach(cb => cb())
     scrollType('scrollTo')
     // 当前页面绑定的的,要保存滚动条的元素,滚动到指定位置
-    elements[id]?.domList?.forEach((d, el) => {
+    elements[id].domList?.forEach((d, el) => {
       el.scrollTop = d.top
       el.scrollLeft = d.left
     })
@@ -126,13 +126,13 @@ export default function AliveTransfer(
 
   onCleanup(() => {
     setCurrentComponentId(closeSymbol)
-    elements[id]?.onDeactivated?.forEach(cb => cb())
+    elements[id].onDeactivated?.forEach(cb => cb())
     scrollType('cacheScroll')
     // 当前页面绑定的的,要保存滚动条的元素,
-    elements[id]?.domList?.forEach((_, el, map) =>
+    elements[id].domList?.forEach((_, el, map) =>
       map.set(el, { top: el.scrollTop, left: el.scrollLeft })
     )
   })
 
-  return elements[id]?.component
+  return elements[id].component
 }

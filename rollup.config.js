@@ -13,10 +13,10 @@ export default withSolid({
       file: 'dist/index.js',
       format: 'es',
     },
-    {
-      file: 'dist/index.cjs',
-      format: 'cjs',
-    }
+    // {
+    //   file: 'dist/index.cjs',
+    //   format: 'cjs',
+    // }
   ],
   plugins: [
     typescript(), 
