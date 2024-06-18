@@ -1,13 +1,13 @@
 import { ProveiderProps, StoreProps, NodeInfo, SetElement } from './default'
 import { createStore, produce } from 'solid-js/store'
 import Context from './context'
-import { createEffect } from 'solid-js'
+import { createEffect,on } from 'solid-js'
 /**
  * @description Alive
  * @param children jsx.element
  * @param { string } [scrollId] id,如 'root' 会在切换组件时的动作,默认saveScrollTop
- * @param { 'alwaysTop'|'saveScroll' } [behavior] dom元素滚动条会如何保持
- * @param { 'appear'|'toLeft' } [transitionEnterName] 路由切换动画, 可以自己加
+ * @param { 'alwaysTop'|'saveScroll' } [behavior] 'alwaysTop'|'saveScroll' dom元素滚动条会如何保持
+ * @param { 'appear'|'toLeft' } [transitionEnterName] 'appear'|'toLeft' 路由切换动画, 可以自己加,看dist 中的样式格式
  */
 export default function AliveProvider(props: ProveiderProps) {
   var [elements, setElements] = createStore<StoreProps>()
@@ -98,12 +98,12 @@ export default function AliveProvider(props: ProveiderProps) {
 
   //keepAlive下  激活缓存组件
   var onActivated = (cb: () => void) => {
-    setCb('onActivated', cb)
+    setCb('onActivated', on([],cb) )
   }
 
   // keepalive下 暂时退出缓存组件
   var onDeactivated = (cb: () => void) => {
-    setCb('onDeactivated', cb)
+    setCb('onDeactivated', on([],cb))
   }
 
   // 缓存dom, 现在暂时用于缓存高度
