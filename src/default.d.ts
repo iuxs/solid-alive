@@ -40,3 +40,11 @@ export interface ContextProps {
   setCurrentComponentId: (id: string | symbol) => void
   insertCacheCb: (id: string) => void
 }
+
+interface IActive {
+  [key:string]: string
+}
+export interface IPrevCall {
+  onActivated: IActive
+  onDeactivated: IActive
+}

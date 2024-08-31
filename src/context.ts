@@ -1,5 +1,5 @@
 import { createContext } from 'solid-js'
-import { ContextProps } from "../dist/types/default"
+import { ContextProps } from "./default"
 
 var Context = createContext<ContextProps>({
   elements: {},

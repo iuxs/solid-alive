@@ -1,5 +1,5 @@
 import { useContext } from 'solid-js'
-import { ContextProps } from '../dist/types/default'
+import { ContextProps } from './default'
 import Context from './context'
 
 function useAlive1() {

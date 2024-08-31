@@ -1,6 +1,6 @@
 import { JSX, useContext, createRoot, createEffect, onCleanup } from 'solid-js'
 import Context from './context'
-import { ContextProps } from '../dist/types/default'
+import { ContextProps } from './default'
 
 let prevPathSet: Set<string> = new Set([]) // 上一个路由是谁
 /**

@@ -3,8 +3,8 @@ import {
   StoreProps,
   NodeInfo,
   IInfo,
-  TSetInfo,
-} from "../dist/types/default"
+  IPrevCall,
+} from "./default"
 import { createStore, produce } from "solid-js/store"
 import Context from "./context"
 import { on } from "solid-js"
@@ -15,11 +15,15 @@ import { getCallerFunctionName } from "./utils"
  */
 export default function AliveProvider(props: ProveiderProps) {
   let [elements, setElements] = createStore<StoreProps>(),
-    [info, _setInfo] = createStore<IInfo>({ frozen: true }),
+    [info, setInfo] = createStore<IInfo>({ frozen: true }),
     currComponentId: string | symbol = "",
     activeCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     deActiveCbMap: Map<string | symbol, Set<() => void>> = new Map(),
-    prevCall = { cbType: "", caller: "", path: "" }
+    prevCall: IPrevCall = {
+      onActivated: {}, 
+      onDeactivated: {},
+    }
+  // 插入需要缓存的组件
   var insertElement = (action: NodeInfo) => {
     let id = action.id
     setElements([id], {
@@ -32,6 +36,8 @@ export default function AliveProvider(props: ProveiderProps) {
       onDeactivated = deActiveCbMap.get(id)
     activeCbMap.delete(id)
     deActiveCbMap.delete(id)
+    prevCall.onActivated = {}
+    prevCall.onDeactivated = {}
     Reflect.has(elements, id) &&
       setElements(
         produce((d) => {
@@ -74,15 +80,12 @@ export default function AliveProvider(props: ProveiderProps) {
   // 是否是第一次推入函数
   var isFirstCb = (cbType: "onActivated" | "onDeactivated") => {
     var { caller, path } = getCallerFunctionName()
-    if (!prevCall.caller || prevCall.cbType !== cbType) {
-      prevCall = { caller, path, cbType }
-      return true
-    }
-    if (prevCall.caller === caller && prevCall.path !== path) {
+    var currCall = prevCall[cbType]
+    if (currCall[caller] && currCall[caller] !== path) {
       console.warn(`[solid-alive]:检测到多个${cbType}函数 ${path}`)
       return false
     }
-    prevCall = { caller, path, cbType }
+    prevCall[cbType][caller] = path
     return true
   }
 
@@ -106,10 +109,6 @@ export default function AliveProvider(props: ProveiderProps) {
   // keepalive下 暂时退出缓存组件
   var onDeactivated = (cb: () => void) => {
     setCb("onDeactivated", cb)
-  }
-
-  var setInfo: TSetInfo = (key, value) => {
-    _setInfo(key, value)
   }
 
   return (
