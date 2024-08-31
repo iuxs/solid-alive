@@ -118,9 +118,9 @@ export default function Single() {
 }
 ```
 
-
+4 动态路由 
 ```tsx
-/** 动态路由 App.tsx */
+/** App.tsx */
 import { createEffect, lazy, type Component } from 'solid-js'
 import { Route, Router } from '@solidjs/router'
 import { useAlive,AliveTransfer } from "solid-alive"
@@ -157,9 +157,6 @@ const App: Component = () => {
     path: '/about',
     realPath: '/About/index.tsx',
     parentId: null,
-    hidden: 0,
-    sort: 2,
-    cache: 1
   }
  const addRoute =()=>{
     aliveFrozen() // 暂时不响应下面数据变化
