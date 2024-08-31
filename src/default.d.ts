@@ -1,34 +1,42 @@
 import { JSX } from 'solid-js'
 
-export interface ProveiderProps{
+export interface ProveiderProps {
   children: JSX.Element
 }
 
 export interface NodeInfo {
   id: string
-  component?: JSX.Element
+  loaded?: boolean
+  component?: JSX.Element | null
   children?: Set<string> | null
   dispose?: (() => void) | null
   onActivated?: null | Set<() => void>
   onDeactivated?: null | Set<() => void>
+  isTop?: boolean | null
 }
 
-
 export interface SetElement {
-  <T extends keyof NodeInfo>(id: string, prop: T, v: NodeInfo[T]): void
+  (id: string, values: NodeInfo): void
 }
 
 export interface StoreProps {
-  [propsName: string]: NodeInfo
+  [key: string]: NodeInfo
 }
+
+export interface IInfo {
+  frozen: boolean
+}
+
+export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
 
 export interface ContextProps {
   elements: StoreProps
-  closeSymbol: symbol
+  info: IInfo
+  setInfo: TSetInfo
   insertElement: (d: NodeInfo) => void
   onActivated: (cb: () => void) => void
   onDeactivated: (cb: () => void) => void
   removeAliveElement: (id?: string) => void
-  setElement: SetElement
   setCurrentComponentId: (id: string | symbol) => void
+  insertCacheCb: (id: string) => void
 }

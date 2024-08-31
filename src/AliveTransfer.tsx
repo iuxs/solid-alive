@@ -1,7 +1,8 @@
 import { JSX, useContext, createRoot, createEffect, onCleanup } from 'solid-js'
 import Context from './context'
-import { ContextProps } from './default'
+import { ContextProps } from '../dist/types/default'
 
+let prevPathSet: Set<string> = new Set([]) // 上一个路由是谁
 /**
  * @description Alive 组件用的 转换函数
  * @param { ()=> JSX.Element } Componet,
@@ -14,42 +15,62 @@ export default function AliveTransfer(
   children?: Array<string> | null
 ): JSX.Element {
   var {
+    info,
     elements,
-    closeSymbol,
+    setInfo,
     insertElement,
-    setCurrentComponentId
+    setCurrentComponentId,
+    insertCacheCb
   } = useContext<ContextProps>(Context)
 
   if (!Reflect.has(elements, id)) {
+    setInfo('frozen', false)
     setCurrentComponentId(id)
-    insertElement({
-      id,
-      children: Array.isArray(children) ? new Set(children) : null
-    })
-
     createRoot(dispose => {
       insertElement({
         id,
         dispose,
         component: <Component />,
-        onDeactivated: null,
-        onActivated: null,
+        children: Array.isArray(children) ? new Set(children) : null,
       })
-      // 一个组件完结后 ,将重置到其父组件
-      var fatherId = Object.values(elements).find(item =>
-        item.children?.has(id)
-      )?.id
-      fatherId && setCurrentComponentId(fatherId)
     })
   }
 
+  var getFatherId = (id: string): string => {
+    if (elements[id].isTop) return id
+    var fatherId = Object.values(elements).find(item =>
+      item.children?.has(id)
+    )?.id
+    fatherId && (fatherId = getFatherId(fatherId))
+    return fatherId || id
+  }
+
+  if (!prevPathSet.has(getFatherId(id))) prevPathSet.clear()
+
   createEffect(() => {
-    elements[id].onActivated?.forEach(cb => cb())
+    setInfo('frozen', false)
+    if (prevPathSet.has(id)) return
+    if (elements[id].loaded) {
+      prevPathSet.add(id)
+      setInfo('frozen', true)
+      elements[id].onActivated?.forEach(cb => cb())
+      setInfo('frozen', false)
+    } else {
+      let dom = elements[id]?.component as any
+      while (typeof dom === 'function') {
+        dom = dom()
+      }
+      if (dom instanceof HTMLElement) {
+        insertCacheCb(id)
+      }
+    }
   })
 
   onCleanup(() => {
-    setCurrentComponentId(closeSymbol)
+    if (info.frozen) return
+    setInfo('frozen', true)
     elements[id].onDeactivated?.forEach(cb => cb())
+    setInfo('frozen', false)
   })
 
   return elements[id].component

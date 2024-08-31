@@ -4,12 +4,11 @@
  - pnpm add solid-alive ／ npm i solid-alive / yarn add solid-alive
 ### 描述(describe)
 - 用于 solid 组件缓存,只测试过2级路由缓存
+- AliveProvider 
 - 在 useAlive 
   - removeAliveElement: 函数, 可传一个参数, 不传就删除所有缓存 :
     removeAliveElement('/home')
-  -  onActivated / onDeactivated: 函数,只能传一个函数  
-  -  onActivated(()=> console.log('actived'))
-  - <table><tr><td bgcolor=#ff0>现在多个onActivated/onDeactivated 会被保存,在一个组件 内不要有多个onActivated/onDeactivated函数</td></tr></table>
+  - aliveForzen: 暂时不响应 路由数据变化, aliveForzen()
 - 子父 缓存/删除 问题
   -  如果某组件下有子组件,在父的 AliveTransfer中, 
     第三个参数,为对象 写上子组件的唯一id: {children:['/childrenId','asf',...]}
@@ -18,6 +17,7 @@
 
 
 ###  使用(use)
+ 1 /index.tsx,AliveProvider将app 包裹
  ```jsx
 import { render } from 'solid-js/web'
 import App from './App'
@@ -85,10 +85,10 @@ export default function Blog(props: any) {
 
 -  子  /views/Blog/Single/index.tsx 中
 ```tsx
-import { useAlive , onActivated, onDeactivated} from "solid-alive"
+import {  onActivated,onDeactivated,useAlive } from "solid-alive"
 
 export default function Single() {
-  const { removeAliveElement } = useAlive()
+  const { removeAliveElement,aliveFrozen } = useAlive()
 
   let divRef: Element | undefined = undefined
   const click = () => {
@@ -98,10 +98,10 @@ export default function Single() {
 
   //todo call 这个会被调用
   onActivated(()=>{
-    console.log('Single-activeated-1')
+    console.log('Single-activeated-1') 
   })
  
-  //todo call 这个依然会被调用
+  //todo no call 这个不会被调用
   onActivated(()=>{
     console.log('Single-activeated-2')
   })
@@ -113,20 +113,72 @@ export default function Single() {
     <div>
       <h2>Single</h2>
       <input type="text" style={{ border: '2px solid red' }} />
-      <div
-        style={{ height: '500px', width: '200px',border:'1px solid green',overflow:'auto'}}
-      >
-        <div style="height:900px;border:1px solid red">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Veniam earum
-          aspernatur omnis, fugiat doloremque repellat facilis fugit nisi magni
-          provident hic aliquid nostrum reiciendis, dolores rem, quasi dolor
-          officia? Quidem? Sit alias tempore ab provident ea aliquid nostrum
-          quaerat? Natus aut dignissimos, illo nisi officiis adipisci ipsam
-          totam quasi ratione laboriosam eius recusandae asperiores nobis quis
-          assumenda odio consectetur animi. Debitis architecto mollitia sapiente
-        </div>
-      </div>
     </div>
   )
 }
+```
+
+
+```tsx
+/** 动态路由 App.tsx */
+import { createEffect, lazy, type Component } from 'solid-js'
+import { Route, Router } from '@solidjs/router'
+import { useAlive,AliveTransfer } from "solid-alive"
+
+const modules = import.meta.glob<{ default: Component<any> }>([
+  './views/**/**.tsx',
+  './views/**.tsx'
+])
+
+const transferRouter = (data: MenuData[]) =>
+  data.flatMap(item => {
+    let m = modules[`./views${item.realPath}`]
+    if (!m) return []
+    const Transfer = (props: any) =>
+      AliveTransfer(
+        lazy(m).bind(null, props),
+        item.path,
+        item.children?.map(item => item.path)
+      )
+    return (
+      <Route component={Transfer} path={item.path.split('/').at(-1)}>
+        {item.children ? transferRouter(item.children) : null}
+      </Route>
+    )
+  })
+
+const App: Component = () => {
+  const { aliveFrozen } = useAlive()
+
+  const [data, setData] = createStore<MenuData[]>([])
+  const a: MenuData = {
+    id: 2,
+    text: 'ABOUT',
+    path: '/about',
+    realPath: '/About/index.tsx',
+    parentId: null,
+    hidden: 0,
+    sort: 2,
+    cache: 1
+  }
+ const addRoute =()=>{
+    aliveFrozen() // 暂时不响应下面数据变化
+    setData(d => {
+      return [...d, a]
+    })
+  }
+
+  return (
+    <Router>
+      <Route component={Client}>
+        {/* treeData 将 data变成 树结构数据 */}
+        {transferRouter(treeData(data, 'id', 'parentId'))}
+      </Route>
+    </Router>
+  )
+}
+
+export default App
+
+
 ```
