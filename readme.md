@@ -22,7 +22,7 @@
  ```jsx
 import { render } from 'solid-js/web'
 import App from './App'
-import { aliveProvider } from  'solid-alive'
+import { AliveProvider } from  'solid-alive'
 
 const root = document.getElementById('root')
 
