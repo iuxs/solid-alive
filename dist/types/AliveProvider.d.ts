@@ -1,4 +1,4 @@
-import { ProveiderProps } from "./default";
+import { ProveiderProps } from './default';
 /**
  * @description Alive
  * @param children jsx.element

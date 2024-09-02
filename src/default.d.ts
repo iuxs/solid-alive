@@ -7,8 +7,10 @@ export interface ProveiderProps {
 export interface NodeInfo {
   id: string
   loaded?: boolean
-  component?: JSX.Element | null
-  children?: Set<string> | null
+  owner: any,
+  component?: ((props:any) => JSX.Element) | null
+  element?: JSX.Element | null
+  subIds?: Set<string> | null
   dispose?: (() => void) | null
   onActivated?: null | Set<() => void>
   onDeactivated?: null | Set<() => void>
@@ -36,15 +38,17 @@ export interface ContextProps {
   insertElement: (d: NodeInfo) => void
   onActivated: (cb: () => void) => void
   onDeactivated: (cb: () => void) => void
-  removeAliveElement: (id?: string) => void
+  removeAliveElements: (ids?: Array<IAliveElementIds>) => void
   setCurrentComponentId: (id: string | symbol) => void
-  insertCacheCb: (id: string) => void
+  insertCacheCb: (id: string ) => void
 }
 
 interface IActive {
-  [key:string]: string
+  [key: string]: string
 }
 export interface IPrevCall {
   onActivated: IActive
   onDeactivated: IActive
 }
+
+export type IAliveElementIds =  string

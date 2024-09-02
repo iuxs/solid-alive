@@ -3,13 +3,13 @@ import { ContextProps } from './default'
 import Context from './context'
 
 function useAlive1() {
-  var { onActivated, onDeactivated, removeAliveElement, setInfo } =
+  var { onActivated, onDeactivated, removeAliveElements, setInfo } =
     useContext<ContextProps>(Context)
 
   return {
     onActivated,
     onDeactivated,
-    removeAliveElement,
+    removeAliveElements,
     setInfo
   }
 }
@@ -28,10 +28,10 @@ export function onDeactivated(fn: () => void) {
  * @returns aliveFrozen 让 alive 暂时失去响应, 一般在加新增路由数据时使用
  */
 export function useAlive() {
-  var { removeAliveElement, setInfo } = useAlive1()
+  var { removeAliveElements, setInfo } = useAlive1()
 
   return {
-    removeAliveElement,
+    removeAliveElements,
     aliveFrozen:() => setInfo('frozen', true)
   }
 }

@@ -1,5 +1,13 @@
 import AliveProvider from './AliveProvider'
-import AliveTransfer from './AliveTransfer'
+import aliveTransfer from './aliveTransfer'
+import { AliveComponent } from './AliveComponent'
 import { onActivated, onDeactivated, useAlive } from './useAlive'
 
-export { AliveProvider, AliveTransfer, onActivated, onDeactivated, useAlive }
+export {
+  AliveComponent,
+  AliveProvider,
+  aliveTransfer,
+  onActivated,
+  onDeactivated,
+  useAlive,
+}

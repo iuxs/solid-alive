@@ -8,7 +8,7 @@ var Context = createContext<ContextProps>({
   insertElement: () => void 0,
   onDeactivated: () => void 0,
   onActivated: () => void 0,
-  removeAliveElement: () => void 0,
+  removeAliveElements: () => void 0,
   setCurrentComponentId: () => void 0,
   insertCacheCb:()=>void 0,
 })
