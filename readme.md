@@ -10,10 +10,11 @@
   - removeAliveElements: 函数, 可传一个参数, 不传就删除所有缓存 :
     removeAliveElements(['/home'])
   - aliveForzen: 暂时不响应 路由数据变化, aliveForzen()
+
 - 子父 缓存/删除 问题
-  -  如果某组件下有子组件,在父的 AliveTransfer中, 
+  -  如果某组件下有子组件,在父的 aliveTransfer中, 
     第三个参数,为对象 写上子组件的唯一id: {children:['/childrenId','asf',...]}
-  -  使用见下图, 也可用     -removeAliveElements 删除
+  -  使用见下图, 也可用 removeAliveElements 删除
 
 
 
@@ -48,10 +49,9 @@ import Single from './views/Blog/Single';
 
 const HomeTransfer = aliveTransfer(Home, '/')
 const AboutTransfer = aliveTransfer(About, '/about')
-const ShopTransfer = aliveTransfer(Shop, '/shop',['/shopPage'])
+const ShopTransfer = aliveTransfer(Shop, '/shop', ['/shopPage'])
 const ShopPageTransfer = aliveTransfer(ShopPage, '/shopPage')
 const BlogTransfer = aliveTransfer(Blog, '/blog', ['contact', 'single'])
-const SingleTsf = aliveTransfer(Single,'single')
 
 export default function App() {
   return (
@@ -89,7 +89,6 @@ import {  onActivated,onDeactivated,useAlive, AliveComponent } from "solid-alive
 export default function Single() {
   const { removeAliveElements,aliveFrozen } = useAlive()
 
-  let divRef: Element | undefined = undefined
   const click = () => {
     removeAliveElements(['/about']) // delete '/about'; 删除 /about
     // removeAliveElements() // delete all alive element; 会删除所有缓存的组件
@@ -126,7 +125,7 @@ export default function Single() {
 /**  App.tsx */
 import { createEffect, lazy, type Component } from 'solid-js'
 import { Route, Router } from '@solidjs/router'
-import { useAlive,AliveTransfer } from "solid-alive"
+import { useAlive, aliveTransfer } from "solid-alive"
 
 const modules = import.meta.glob<{ default: Component<any> }>([
   './views/**/**.tsx',
@@ -171,7 +170,7 @@ const App: Component = () => {
     <Router>
       <Route component={Client}>
         {/* treeData 将 data变成 树结构数据 */}
-        {transferRouter(treeData(data, 'id', 'parentId'))}
+        {transferRouter(treeData(data))}
       </Route>
     </Router>
   )

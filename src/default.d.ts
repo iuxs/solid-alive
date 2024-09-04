@@ -8,13 +8,14 @@ export interface NodeInfo {
   id: string
   loaded?: boolean
   owner: any,
+  props?:any
   component?: ((props:any) => JSX.Element) | null
   element?: JSX.Element | null
   subIds?: Set<string> | null
   dispose?: (() => void) | null
   onActivated?: null | Set<() => void>
   onDeactivated?: null | Set<() => void>
-  isTop?: boolean | null
+  fatherId?: string
 }
 
 export interface SetElement {

@@ -4,7 +4,7 @@ import {
   createEffect,
   onCleanup,
   JSX,
-  createComputed,
+  createComputed
 } from 'solid-js'
 import Context from './context'
 import { ContextProps } from './default'
@@ -20,9 +20,13 @@ export default function aliveTransfer(
   Component: <T>(props: T) => JSX.Element,
   id: string,
   subIds?: Array<string>,
-  saveComponent?: boolean
 ) {
   return function <T>(props: T) {
+    const clean = () => {
+      if (info.frozen) return
+      setInfo('frozen', true)
+      elements[id].onDeactivated?.forEach(cb => cb())
+    }
     var {
       info,
       elements,
@@ -40,7 +44,6 @@ export default function aliveTransfer(
           id,
           dispose,
           owner: null,
-          component: saveComponent ? Component : null,
           element: Component<T>(props),
           subIds: Array.isArray(subIds) ? new Set(subIds) : null
         })
@@ -48,42 +51,34 @@ export default function aliveTransfer(
     }
 
     var getFatherId = (id: string): string => {
-      if (elements[id].isTop) return id
-      var fatherId = Object.values(elements).find(item =>
-        item.subIds?.has(id)
-      )?.id
-      fatherId && (fatherId = getFatherId(fatherId))
-      return fatherId || id
+      var fatherId = elements[id].fatherId
+      return fatherId ? getFatherId(fatherId) : id
     }
 
-    if (!prevPathSet.has(getFatherId(id))) prevPathSet.clear()
-
     createComputed(() => {
-      if (!elements[id].loaded) {
-        let dom = elements[id]?.element as any
-        while (typeof dom === 'function') {
-          dom = dom()
-        }
-        dom instanceof HTMLElement && insertCacheCb(id)
+      if (elements[id].loaded) return
+      let dom = elements[id]?.element as any
+      while (typeof dom === 'function') {
+        dom = dom()
       }
+      if (Array.isArray(dom) || dom instanceof HTMLElement) insertCacheCb(id)
     })
+
+    if (prevPathSet.size && !prevPathSet.has(getFatherId(id)))
+      prevPathSet.clear()
 
     createEffect(() => {
       setInfo('frozen', false)
       if (prevPathSet.has(id)) return
-      if ( elements[id].loaded) {
+      if (elements[id].loaded) {
         prevPathSet.add(id)
         setInfo('frozen', true)
         elements[id].onActivated?.forEach(cb => cb())
         setInfo('frozen', false)
       }
     })
+    onCleanup(clean)
 
-    onCleanup(() => {
-      if (info.frozen) return
-      setInfo('frozen', true)
-      elements[id].onDeactivated?.forEach(cb => cb())
-    })
     return elements[id].element
   }
 }

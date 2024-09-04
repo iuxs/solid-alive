@@ -26,9 +26,11 @@ export default function AliveProvider(props: ProveiderProps) {
     }
   var insertElement = (action: NodeInfo) => {
     let id = action.id
+    var res = Object.values(elements).find(item => item.subIds?.has(id))
     setElements([id], {
       ...elements[id],
-      ...action
+      ...action,
+      fatherId: res?.id
     })
   }
   var insertCacheCb = (id: string) => {
@@ -60,11 +62,11 @@ export default function AliveProvider(props: ProveiderProps) {
   }
 
   var removeAliveElements = (ids?: Array<IAliveElementIds>) => {
-    if (ids && Array.isArray(ids)) {
+    if (Array.isArray(ids)) {
       for (const id of ids) {
         removeItem(id)
       }
-    } else {
+    } else if (!ids) {
       for (const elenment of Object.values(elements)) {
         removeItem(elenment.id)
       }
@@ -79,7 +81,6 @@ export default function AliveProvider(props: ProveiderProps) {
     var { caller, path } = getCallerFunctionName()
     var currCall = prevCall[cbType]
     if (currCall[caller] && currCall[caller] !== path) {
-      // console.warn(`[solid-alive]:检测到多个${cbType}函数 ${path}`)
       return false
     }
     prevCall[cbType][caller] = path
