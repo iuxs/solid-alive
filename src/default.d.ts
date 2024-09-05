@@ -7,9 +7,9 @@ export interface ProveiderProps {
 export interface NodeInfo {
   id: string
   loaded?: boolean
-  owner: any,
-  props?:any
-  component?: ((props:any) => JSX.Element) | null
+  owner: any
+  props?: any
+  component?: ((props: any) => JSX.Element) | null
   element?: JSX.Element | null
   subIds?: Set<string> | null
   dispose?: (() => void) | null
@@ -27,7 +27,10 @@ export interface StoreProps {
 }
 
 export interface IInfo {
-  frozen: boolean
+  frozen: boolean 
+  cbOnOff: 'on' | 'off' 
+  currComponentId: string | symbol 
+  prevComponentId: string | symbol 
 }
 
 export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
@@ -35,13 +38,14 @@ export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
 export interface ContextProps {
   elements: StoreProps
   info: IInfo
+  symbolClose: symbol
   setInfo: TSetInfo
   insertElement: (d: NodeInfo) => void
   onActivated: (cb: () => void) => void
   onDeactivated: (cb: () => void) => void
   removeAliveElements: (ids?: Array<IAliveElementIds>) => void
-  setCurrentComponentId: (id: string | symbol) => void
-  insertCacheCb: (id: string ) => void
+  insertCacheCb: (id: string) => void
+  setCurrcomponent: (id: string | symbol) => void
 }
 
 interface IActive {
@@ -52,4 +56,4 @@ export interface IPrevCall {
   onDeactivated: IActive
 }
 
-export type IAliveElementIds =  string
+export type IAliveElementIds = string

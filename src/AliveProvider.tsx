@@ -4,7 +4,8 @@ import {
   NodeInfo,
   IInfo,
   IPrevCall,
-  IAliveElementIds
+  IAliveElementIds,
+  TSetInfo
 } from './default'
 import { createStore, produce } from 'solid-js/store'
 import Context from './context'
@@ -16,8 +17,13 @@ import { getCallerFunctionName } from './utils'
  */
 export default function AliveProvider(props: ProveiderProps) {
   let [elements, setElements] = createStore<StoreProps>(),
-    [info, setInfo] = createStore<IInfo>({ frozen: true }),
-    currComponentId: string | symbol = '',
+    info: IInfo = {
+      frozen: false,
+      cbOnOff: 'off',
+      currComponentId: '',
+      prevComponentId: ''
+    },
+    symbolClose = Symbol('close'),
     activeCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     deActiveCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     prevCall: IPrevCall = {
@@ -25,12 +31,12 @@ export default function AliveProvider(props: ProveiderProps) {
       onDeactivated: {}
     }
   var insertElement = (action: NodeInfo) => {
-    let id = action.id
-    var res = Object.values(elements).find(item => item.subIds?.has(id))
+    let id = action.id,
+      father = Object.values(elements).find(item => item.subIds?.has(id))
     setElements([id], {
       ...elements[id],
       ...action,
-      fatherId: res?.id
+      fatherId: father?.id
     })
   }
   var insertCacheCb = (id: string) => {
@@ -55,10 +61,15 @@ export default function AliveProvider(props: ProveiderProps) {
     subIds?.forEach(cid => cid !== id && removeItem(cid))
     setElements(d => {
       d[id].dispose?.()
+      d[id].dispose = null
       ;(d[id] as any) = null
       delete d[id]
       return d
     })
+  }
+
+  var setCurrcomponent = (id: string | symbol) => {
+    info.currComponentId = id
   }
 
   var removeAliveElements = (ids?: Array<IAliveElementIds>) => {
@@ -73,10 +84,6 @@ export default function AliveProvider(props: ProveiderProps) {
     }
   }
 
-  var setCurrentComponentId = (id: string | symbol) => {
-    currComponentId = id
-  }
-
   var isFirstCb = (cbType: 'onActivated' | 'onDeactivated') => {
     var { caller, path } = getCallerFunctionName()
     var currCall = prevCall[cbType]
@@ -88,7 +95,13 @@ export default function AliveProvider(props: ProveiderProps) {
   }
 
   var setCb = (t: 'onActivated' | 'onDeactivated', cb: () => void) => {
-    if (!info.frozen && cb && isFirstCb(t)) {
+    var { cbOnOff, currComponentId } = info
+    if (
+      cbOnOff === 'on' &&
+      currComponentId !== symbolClose &&
+      cb &&
+      isFirstCb(t)
+    ) {
       var obj = {
         onActivated: activeCbMap,
         onDeactivated: deActiveCbMap
@@ -107,18 +120,23 @@ export default function AliveProvider(props: ProveiderProps) {
     setCb('onDeactivated', cb)
   }
 
+  var setInfo: TSetInfo = (key, value) => {
+    info[key] = value
+  }
+
   return (
     <Context.Provider
       value={{
         info,
         elements,
+        symbolClose,
         setInfo,
         onActivated,
         onDeactivated,
         insertElement,
         removeAliveElements,
-        setCurrentComponentId,
-        insertCacheCb
+        insertCacheCb,
+        setCurrcomponent
       }}
     >
       {props.children}

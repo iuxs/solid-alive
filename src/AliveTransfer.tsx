@@ -9,7 +9,7 @@ import {
 import Context from './context'
 import { ContextProps } from './default'
 
-let prevPathSet: Set<string> = new Set([])
+let prevPathSet: Set<string> = new Set([]) 
 /**
  * @description Alive 组件用的 转换函数
  * @param { ()=> JSX.Element } Component,
@@ -19,27 +19,22 @@ let prevPathSet: Set<string> = new Set([])
 export default function aliveTransfer(
   Component: <T>(props: T) => JSX.Element,
   id: string,
-  subIds?: Array<string>,
+  subIds?: Array<string>
 ) {
   return function <T>(props: T) {
-    const clean = () => {
-      if (info.frozen) return
-      setInfo('frozen', true)
-      elements[id].onDeactivated?.forEach(cb => cb())
-    }
     var {
       info,
       elements,
+      symbolClose,
       setInfo,
       insertElement,
-      setCurrentComponentId,
-      insertCacheCb
+      insertCacheCb,
+      setCurrcomponent
     } = useContext<ContextProps>(Context)
-
     if (!Reflect.has(elements, id)) {
-      setInfo('frozen', false)
-      setCurrentComponentId(id)
       createRoot(dispose => {
+        setCurrcomponent(id)
+        setInfo('cbOnOff', 'on')
         insertElement({
           id,
           dispose,
@@ -61,23 +56,34 @@ export default function aliveTransfer(
       while (typeof dom === 'function') {
         dom = dom()
       }
-      if (Array.isArray(dom) || dom instanceof HTMLElement) insertCacheCb(id)
+      if (Array.isArray(dom) || dom instanceof HTMLElement) {
+        insertCacheCb(id)
+        !elements[id].subIds?.size && setCurrcomponent(symbolClose)
+      }
     })
 
     if (prevPathSet.size && !prevPathSet.has(getFatherId(id)))
       prevPathSet.clear()
 
     createEffect(() => {
-      setInfo('frozen', false)
-      if (prevPathSet.has(id)) return
+      if (info.frozen) {
+        !elements[id].subIds?.size && setInfo('frozen', false)
+        return
+      }
       if (elements[id].loaded) {
         prevPathSet.add(id)
-        setInfo('frozen', true)
+        setInfo('cbOnOff', 'off')
         elements[id].onActivated?.forEach(cb => cb())
-        setInfo('frozen', false)
+        setInfo('cbOnOff', 'on')
       }
     })
-    onCleanup(clean)
+
+    onCleanup(() => {
+      if (info.frozen) return
+      setInfo('cbOnOff', 'off')
+      elements[id].onDeactivated?.forEach(cb => cb())
+      setInfo('cbOnOff', 'on')
+    })
 
     return elements[id].element
   }
