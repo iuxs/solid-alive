@@ -61,6 +61,7 @@ export default function AliveProvider(props: ProveiderProps) {
     if (!Reflect.has(elements, id)) return
     var subIds = elements[id]?.subIds
     subIds?.forEach((cid) => cid !== id && removeItem(cid))
+    elements[id].dispose?.()
     setElements({ [id]: undefined })
   }
 
