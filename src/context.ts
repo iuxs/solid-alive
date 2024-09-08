@@ -8,7 +8,6 @@ var Context = createContext<ContextProps>({
     frozen: false,
     cbOnOff: 'off',
     currComponentId: '',
-    prevComponentId: ''
   },
   setInfo: () => void 0,
   insertElement: () => void 0,
@@ -16,7 +15,6 @@ var Context = createContext<ContextProps>({
   onActivated: () => void 0,
   removeAliveElements: () => void 0,
   insertCacheCb: () => void 0,
-  setCurrcomponent: () => void 0
 })
 
 export default Context

@@ -30,7 +30,6 @@ export interface IInfo {
   frozen: boolean 
   cbOnOff: 'on' | 'off' 
   currComponentId: string | symbol 
-  prevComponentId: string | symbol 
 }
 
 export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
@@ -45,7 +44,6 @@ export interface ContextProps {
   onDeactivated: (cb: () => void) => void
   removeAliveElements: (ids?: Array<IAliveElementIds>) => void
   insertCacheCb: (id: string) => void
-  setCurrcomponent: (id: string | symbol) => void
 }
 
 interface IActive {

@@ -5,12 +5,13 @@ import {
   IInfo,
   IPrevCall,
   IAliveElementIds,
-  TSetInfo
-} from './default'
-import { createStore, produce } from 'solid-js/store'
-import Context from './context'
-import { on } from 'solid-js'
-import { getCallerFunctionName } from './utils'
+  TSetInfo,
+} from "./default"
+import { createStore, produce } from "solid-js/store"
+import Context from "./context"
+import { on } from "solid-js"
+import { getCallerFunctionName } from "./utils"
+
 /**
  * @description Alive
  * @param children jsx.element
@@ -19,24 +20,24 @@ export default function AliveProvider(props: ProveiderProps) {
   let [elements, setElements] = createStore<StoreProps>(),
     info: IInfo = {
       frozen: false,
-      cbOnOff: 'off',
-      currComponentId: '',
-      prevComponentId: ''
+      cbOnOff: "off",
+      currComponentId: "",
     },
-    symbolClose = Symbol('close'),
+    symbolClose = Symbol("close"),
     activeCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     deActiveCbMap: Map<string | symbol, Set<() => void>> = new Map(),
     prevCall: IPrevCall = {
       onActivated: {}, 
-      onDeactivated: {}
+      onDeactivated: {},
     }
+
   var insertElement = (action: NodeInfo) => {
     let id = action.id,
-      father = Object.values(elements).find(item => item.subIds?.has(id))
+      father = Object.values(elements).find((item) => item.subIds?.has(id))
     setElements([id], {
       ...elements[id],
       ...action,
-      fatherId: father?.id
+      fatherId: father?.id,
     })
   }
   var insertCacheCb = (id: string) => {
@@ -48,28 +49,19 @@ export default function AliveProvider(props: ProveiderProps) {
     prevCall.onDeactivated = {}
     Reflect.has(elements, id) &&
       setElements(
-        produce(d => {
-          d[id]['onActivated'] = onActivated
-          d[id]['onDeactivated'] = onDeactivated
-          d[id]['loaded'] = true
+        produce((d) => {
+          d[id]["onActivated"] = onActivated
+          d[id]["onDeactivated"] = onDeactivated
+          d[id]["loaded"] = true
         })
       )
   }
+
   var removeItem = (id: string) => {
     if (!Reflect.has(elements, id)) return
     var subIds = elements[id]?.subIds
-    subIds?.forEach(cid => cid !== id && removeItem(cid))
-    setElements(d => {
-      d[id].dispose?.()
-      d[id].dispose = null
-      ;(d[id] as any) = null
-      delete d[id]
-      return d
-    })
-  }
-
-  var setCurrcomponent = (id: string | symbol) => {
-    info.currComponentId = id
+    subIds?.forEach((cid) => cid !== id && removeItem(cid))
+    setElements({ [id]: undefined })
   }
 
   var removeAliveElements = (ids?: Array<IAliveElementIds>) => {
@@ -84,7 +76,7 @@ export default function AliveProvider(props: ProveiderProps) {
     }
   }
 
-  var isFirstCb = (cbType: 'onActivated' | 'onDeactivated') => {
+  var isFirstCb = (cbType: "onActivated" | "onDeactivated") => {
     var { caller, path } = getCallerFunctionName()
     var currCall = prevCall[cbType]
     if (currCall[caller] && currCall[caller] !== path) {
@@ -94,17 +86,17 @@ export default function AliveProvider(props: ProveiderProps) {
     return true
   }
 
-  var setCb = (t: 'onActivated' | 'onDeactivated', cb: () => void) => {
+  var setCb = (t: "onActivated" | "onDeactivated", cb: () => void) => {
     var { cbOnOff, currComponentId } = info
     if (
-      cbOnOff === 'on' &&
+      cbOnOff === "on" &&
       currComponentId !== symbolClose &&
       cb &&
       isFirstCb(t)
     ) {
       var obj = {
         onActivated: activeCbMap,
-        onDeactivated: deActiveCbMap
+        onDeactivated: deActiveCbMap,
       }
       var v = obj[t]
       var prev = v.get(currComponentId) || new Set()
@@ -113,11 +105,11 @@ export default function AliveProvider(props: ProveiderProps) {
   }
 
   var onActivated = (cb: () => void) => {
-    setCb('onActivated', cb)
+    setCb("onActivated", cb)
   }
 
   var onDeactivated = (cb: () => void) => {
-    setCb('onDeactivated', cb)
+    setCb("onDeactivated", cb)
   }
 
   var setInfo: TSetInfo = (key, value) => {
@@ -136,7 +128,6 @@ export default function AliveProvider(props: ProveiderProps) {
         insertElement,
         removeAliveElements,
         insertCacheCb,
-        setCurrcomponent
       }}
     >
       {props.children}
