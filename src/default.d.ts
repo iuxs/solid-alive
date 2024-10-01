@@ -1,14 +1,20 @@
 import { JSX } from 'solid-js'
 
-export interface ProveiderProps {
-  children: JSX.Element
+interface pub{
+  aliveIds?: Array<string> | null
 }
+
+export interface ProveiderProps  {
+  children: JSX.Element
+  includes?:pub['aliveIds']
+}
+
+export type tActivated = "onActivated" | "onDeactivated"
 
 export interface NodeInfo {
   id: string
   loaded?: boolean
   owner: any
-  props?: any
   component?: ((props: any) => JSX.Element) | null
   element?: JSX.Element | null
   subIds?: Set<string> | null
@@ -34,16 +40,15 @@ export interface IInfo {
 
 export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
 
-export interface ContextProps {
+export interface ContextProps extends pub {
   elements: StoreProps
   info: IInfo
   symbolClose: symbol
   setInfo: TSetInfo
   insertElement: (d: NodeInfo) => void
-  onActivated: (cb: () => void) => void
-  onDeactivated: (cb: () => void) => void
   removeAliveElements: (ids?: Array<IAliveElementIds>) => void
   insertCacheCb: (id: string) => void
+  setCb:(t: tActivated, cb: () => void)=>void
 }
 
 interface IActive {

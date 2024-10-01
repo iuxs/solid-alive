@@ -5,10 +5,13 @@
 ### 描述(describe)
 - 用于 solid 组件缓存,只测试过2级路由缓存
 - AliveProvider 
+  - includes : 数组, 不传默认缓存所有,  ['/','/about']
 - AliveComponent 不要在 有缓存 的组件中使用
 - 在 useAlive 
   - removeAliveElements: 函数, 可传一个参数, 不传就删除所有缓存 :
     removeAliveElements(['/home'])
+  - onActivated
+  - onDeactivated
   - aliveForzen: 暂时不响应 路由数据变化, aliveForzen()
 
 - 子父 缓存/删除 问题
@@ -27,6 +30,7 @@ import { AliveProvider } from  'solid-alive'
 
 const root = document.getElementById('root')
 
+  // includes, 默认缓存所有
 render(() => 
   <AliveProvider>
     <App />
@@ -47,11 +51,10 @@ import Blog from './views/Blog';
 import Single from './views/Blog/Single';
 
 
-const HomeTransfer = aliveTransfer(Home, '/')
-const AboutTransfer = aliveTransfer(About, '/about')
-const ShopTransfer = aliveTransfer(Shop, '/shop', ['/shopPage'])
-const ShopPageTransfer = aliveTransfer(ShopPage, '/shopPage')
-const BlogTransfer = aliveTransfer(Blog, '/blog', ['contact', 'single'])
+const HomeTransfer = aliveTransfer(Home, '/'),
+ AboutTsf = aliveTransfer(About, '/about'),
+ BlogTsf = aliveTransfer(Blog, '/blog', ['/contact', 'single']),
+ SingleTsf = aliveTransfer(Single,'single')
 
 export default function App() {
   return (
@@ -99,7 +102,7 @@ export default function Single() {
     console.log('Single-activeated-1') 
   })
  
-  //todo no call 这个不会被调用
+  //todo call 也会被调用
   onActivated(()=>{
     console.log('Single-activeated-2')
   })

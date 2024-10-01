@@ -11,10 +11,9 @@ var Context = createContext<ContextProps>({
   },
   setInfo: () => void 0,
   insertElement: () => void 0,
-  onDeactivated: () => void 0,
-  onActivated: () => void 0,
   removeAliveElements: () => void 0,
   insertCacheCb: () => void 0,
+  setCb:()=>void 0
 })
 
 export default Context

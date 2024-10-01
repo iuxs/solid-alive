@@ -4,12 +4,13 @@ import {
   createEffect,
   onCleanup,
   JSX,
-  createComputed
+  createComputed,
+  getOwner,
+  runWithOwner
 } from 'solid-js'
 import Context from './context'
 import { ContextProps } from './default'
 
-let prevPathSet: Set<string> = new Set([]) 
 /**
  * @description Alive 组件用的 转换函数; aliveTransfer(Comp, ‘/home’)
  * @param { ()=> JSX.Element } Component () => JSX.Element
@@ -19,38 +20,43 @@ let prevPathSet: Set<string> = new Set([])
 export default function aliveTransfer(
   Component: <T>(props: T) => JSX.Element,
   id: string,
-  subIds?: Array<string>,
+  subIds?: Array<string>
 ) {
   return function <T>(props: T) {
-    var { info, elements, symbolClose, setInfo, insertElement, insertCacheCb } =
-      useContext<ContextProps>(Context)
-    if (!Reflect.has(elements, id)) {
-      createRoot(dispose => {
-        setInfo('currComponentId', id)
-        setInfo('cbOnOff', 'on')
-        insertElement({
-          id,
-          dispose,
-          owner: null,
-          element: Component(props),
-          subIds: Array.isArray(subIds) ? new Set(subIds) : null
+    var {
+      info,
+      elements,
+      symbolClose,
+      setInfo,
+      insertElement,
+      insertCacheCb,
+      aliveIds
+    } = useContext<ContextProps>(Context)
+
+    if (aliveIds && aliveIds.includes(id)) {
+      !Reflect.has(elements, id) &&
+        createRoot(dispose => {
+          setInfo('currComponentId', id)
+          setInfo('cbOnOff', 'on')
+          insertElement({
+            id,
+            dispose,
+            owner: getOwner(),
+            element: Component(props),
+            subIds: Array.isArray(subIds) ? new Set(subIds) : null
+          })
         })
-      })
+    } else {
+      return Component(props)
     }
 
-    var getFatherId = (id: string): string => {
-      var fatherId = elements[id].fatherId
-      return fatherId ? getFatherId(fatherId) : id
-    }
-    const getDom = (id: string) => {
-      let dom = elements[id]?.element as any
+    var getDom = (id: string) => {
+      var dom = elements[id]?.element as any
       while (typeof dom === 'function') {
         dom = dom()
       }
-      return dom instanceof HTMLElement || Array.isArray(dom) ? dom : false
+      return dom
     }
-    if (prevPathSet.size && !prevPathSet.has(getFatherId(id)))
-      prevPathSet.clear()
 
     createComputed(() => {
       if (!elements[id].loaded && getDom(id)) {
@@ -64,9 +70,7 @@ export default function aliveTransfer(
         !elements[id].subIds?.size && setInfo('frozen', false)
         return
       }
-      
       if (elements[id]?.loaded) {
-        prevPathSet.add(id)
         setInfo('cbOnOff', 'off')
         elements[id].onActivated?.forEach(cb => cb())
         setInfo('cbOnOff', 'on')
@@ -80,6 +84,9 @@ export default function aliveTransfer(
       setInfo('cbOnOff', 'on')
     })
 
-    return elements[id].element
+    return (
+      elements[id].owner &&
+      runWithOwner(elements[id].owner, () => elements[id].element)
+    )
   }
 }
