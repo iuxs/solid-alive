@@ -3,14 +3,14 @@ import { ContextProps } from './default'
 import Context from './context'
 
 function useAlive1() {
-  var { setCb, removeAliveElements, setInfo } =
+  var { setCb, removeAliveElements, info } =
     useContext<ContextProps>(Context)
 
   return {
     onActivated: (cb: () => void) => setCb('onActivated', cb),
     onDeactivated: (cb: () => void) => setCb('onDeactivated', cb),
     removeAliveElements,
-    setInfo
+    info
   }
 }
 
@@ -30,12 +30,12 @@ export function onDeactivated(fn: () => void) {
  * @returns onDeactivated 离开
  */
 export function useAlive() {
-  var { removeAliveElements, setInfo } = useAlive1()
+  var { removeAliveElements, info, onActivated, onDeactivated } = useAlive1()
 
   return {
     onActivated,
     onDeactivated,
     removeAliveElements,
-    aliveFrozen: () => setInfo('frozen', true)
+    aliveFrozen: () => info.frozen = true
   }
 }

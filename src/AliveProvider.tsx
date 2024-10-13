@@ -3,64 +3,33 @@ import {
   StoreProps,
   NodeInfo,
   IInfo,
-  IPrevCall,
   IAliveElementIds,
-  TSetInfo,
   tActivated
-} from './default'
-import { createStore, produce } from 'solid-js/store'
-import Context from './context'
-import { createComputed, on } from 'solid-js'
+} from "./default"
+import { createStore, produce } from "solid-js/store"
+import Context from "./context"
+import { createComputed, on } from "solid-js"
 
 /**
  * @description Alive
  * @param children jsx.element
- * @param {Arrya<string> | null} [includes]  哪些路由要缓存, 不写默认缓存所有
+ * @param {Arrya<string> | null} [include]  哪些路由要缓存, 不写默认缓存所有
  */
 export default function AliveProvider(props: ProveiderProps) {
   let [elements, setElements] = createStore<StoreProps>(),
+    symbolClose = Symbol("close"),
     info: IInfo = {
       frozen: false,
-      cbOnOff: 'off',
-      currComponentId: ''
-    },
-    symbolClose = Symbol('close'),
-    activeCbMap: Map<string | symbol, Set<() => void>> = new Map(),
-    deActiveCbMap: Map<string | symbol, Set<() => void>> = new Map(),
-    prevCall: IPrevCall = {
-      onActivated: {}, 
-      onDeactivated: {}
+      cbOnOff: "on",
+      currComponentId: symbolClose,
+      aliveIds: null
     }
   var insertElement = (action: NodeInfo) => {
-    let id = action.id,
-      father = Object.values(elements).find(item => item.subIds?.has(id))
-    setElements([id], {
-      ...elements[id],
-      ...action,
-      fatherId: father?.id
-    })
+    setElements([action.id], { ...elements[action.id], ...action })
   }
-  var insertCacheCb = (id: string) => {
-    let onActivated = activeCbMap.get(id),
-      onDeactivated = deActiveCbMap.get(id)
-    activeCbMap.delete(id)
-    deActiveCbMap.delete(id)
-    prevCall.onActivated = {}
-    prevCall.onDeactivated = {}
-    Reflect.has(elements, id) &&
-      setElements(
-        produce(d => {
-          d[id]['onActivated'] = onActivated
-          d[id]['onDeactivated'] = onDeactivated
-          d[id]['loaded'] = true
-        })
-      )
-  }
-
   var removeItem = (id: string) => {
-    if (Reflect.has(elements, id)) {
-      var subIds = elements[id]?.subIds
-      subIds?.forEach(cid => cid !== id && removeItem(cid))
+    if (elements[id]) {
+      elements[id].subIds?.forEach(cid => cid !== id && removeItem(cid))
       elements[id].dispose?.()
       setElements({ [id]: undefined })
     }
@@ -72,36 +41,43 @@ export default function AliveProvider(props: ProveiderProps) {
         removeItem(id)
       }
     } else if (!ids) {
-      for (const elenment of Object.values(elements)) {
-        removeItem(elenment.id)
+      for (const id of Object.keys(elements)) {
+        removeItem(id)
       }
     }
   }
 
   var setCb = (t: tActivated, cb: () => void) => {
-    var { cbOnOff, currComponentId } = info
-    if (cbOnOff === 'on' && currComponentId !== symbolClose && cb) {
-      var v = {
-        onActivated: activeCbMap,
-        onDeactivated: deActiveCbMap
-      }[t]
-      var prev = v.get(currComponentId) || new Set()
-      prev.add(on([], cb)) && v.set(currComponentId, prev)
+    var cbOnOff = info.cbOnOff
+    var id = info.currComponentId
+    if (cbOnOff === "on" && typeof id === "string" && cb) {
+      !elements[id] && setElements(id, {})
+      setElements(
+        produce(d => {
+          d[id as string][t] = [...(d[id as string][t] || []), on([], cb)]
+        })
+      )
+      t === "onActivated" &&
+        Promise.resolve().then(() => {
+          info.cbOnOff = "off"
+          cb()
+          info.cbOnOff = "on"
+        })
     }
   }
 
-  var setInfo: TSetInfo = (key, value) => {
-    info[key] = value
-  }
-
-  createComputed<Array<string>>((prevIds = []) => {
-    var _inc = props.includes || []
-    if (prevIds.length > _inc.length) {
-      var set = new Set(_inc)
-      removeAliveElements(prevIds.filter(id => !set.has(id)))
-    }
-    return _inc
-  },props.includes || [])
+  createComputed<Array<string>>(
+    prevIds => {
+      var isArr = Array.isArray(props.include)
+      var _inc = isArr ? props.include : []
+      info.aliveIds = isArr ? props.include : null
+      if (prevIds.length > _inc!.length) {
+        removeAliveElements(prevIds.filter(id => !_inc!.includes(id)))
+      }
+      return _inc as Array<string>
+    },
+    Array.isArray(props.include) ? props.include : []
+  )
 
   return (
     <Context.Provider
@@ -109,12 +85,9 @@ export default function AliveProvider(props: ProveiderProps) {
         info,
         elements,
         symbolClose,
-        setInfo,
         setCb,
         insertElement,
-        removeAliveElements,
-        insertCacheCb,
-        aliveIds: props.includes
+        removeAliveElements
       }}
     >
       {props.children}

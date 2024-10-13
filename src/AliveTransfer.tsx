@@ -1,15 +1,13 @@
 import {
   useContext,
   createRoot,
-  createEffect,
   onCleanup,
   JSX,
-  createComputed,
   getOwner,
-  runWithOwner
-} from 'solid-js'
-import Context from './context'
-import { ContextProps } from './default'
+  runWithOwner,
+} from "solid-js"
+import Context from "./context"
+import { ContextProps } from "./default"
 
 /**
  * @description Alive 组件用的 转换函数; aliveTransfer(Comp, ‘/home’)
@@ -23,65 +21,34 @@ export default function aliveTransfer(
   subIds?: Array<string>
 ) {
   return function <T>(props: T) {
-    var {
-      info,
-      elements,
-      symbolClose,
-      setInfo,
-      insertElement,
-      insertCacheCb,
-      aliveIds
-    } = useContext<ContextProps>(Context)
+    var { info, elements, symbolClose, insertElement } =
+      useContext<ContextProps>(Context)
 
-    if (aliveIds && aliveIds.includes(id)) {
-      !Reflect.has(elements, id) &&
-        createRoot(dispose => {
-          setInfo('currComponentId', id)
-          setInfo('cbOnOff', 'on')
-          insertElement({
-            id,
-            dispose,
-            owner: getOwner(),
-            element: Component(props),
-            subIds: Array.isArray(subIds) ? new Set(subIds) : null
-          })
-        })
-    } else {
+    if (Array.isArray(info.aliveIds) && !info.aliveIds.includes(id))
       return Component(props)
+
+    if (elements[id]) {
+      info.currComponentId = symbolClose
+      info.frozen
+        ? !elements[id].subIds?.length && (info.frozen = false)
+        : Promise.resolve().then(()=> elements[id].onActivated?.forEach(cb => cb()))
+    } else {
+      info.currComponentId = id
+      createRoot(dispose => {
+        insertElement({
+          id,
+          dispose,
+          owner: getOwner(),
+          element: Component(props),
+          subIds: Array.isArray(subIds) ? subIds : null
+        })
+      })
     }
-
-    var getDom = (id: string) => {
-      var dom = elements[id]?.element as any
-      while (typeof dom === 'function') {
-        dom = dom()
-      }
-      return dom
-    }
-
-    createComputed(() => {
-      if (!elements[id].loaded && getDom(id)) {
-        insertCacheCb(id)
-        !elements[id].subIds?.size && setInfo('currComponentId', symbolClose)
-      }
-    })
-
-    createEffect(() => {
-      if (info.frozen) {
-        !elements[id].subIds?.size && setInfo('frozen', false)
-        return
-      }
-      if (elements[id]?.loaded) {
-        setInfo('cbOnOff', 'off')
-        elements[id].onActivated?.forEach(cb => cb())
-        setInfo('cbOnOff', 'on')
-      }
-    })
 
     onCleanup(() => {
       if (info.frozen) return
-      setInfo('cbOnOff', 'off')
+      info.currComponentId = symbolClose
       elements[id]?.onDeactivated?.forEach(cb => cb())
-      setInfo('cbOnOff', 'on')
     })
 
     return (

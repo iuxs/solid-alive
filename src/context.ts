@@ -9,10 +9,8 @@ var Context = createContext<ContextProps>({
     cbOnOff: 'off',
     currComponentId: '',
   },
-  setInfo: () => void 0,
   insertElement: () => void 0,
   removeAliveElements: () => void 0,
-  insertCacheCb: () => void 0,
   setCb:()=>void 0
 })
 

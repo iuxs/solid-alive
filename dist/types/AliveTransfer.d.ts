@@ -1,4 +1,4 @@
-import { JSX } from 'solid-js';
+import { JSX } from "solid-js";
 /**
  * @description Alive 组件用的 转换函数; aliveTransfer(Comp, ‘/home’)
  * @param { ()=> JSX.Element } Component () => JSX.Element

@@ -5,7 +5,7 @@
 ### 描述(describe)
 - 用于 solid 组件缓存,只测试过2级路由缓存
 - AliveProvider 
-  - includes : 数组, 不传默认缓存所有,  ['/','/about']
+  - include : 数组, 不传默认缓存所有,  ['/','/about'], 当数据变少时, 会自动去删除少的数据缓存
 - AliveComponent 不要在 有缓存 的组件中使用
 - 在 useAlive 
   - removeAliveElements: 函数, 可传一个参数, 不传就删除所有缓存 :
@@ -30,9 +30,10 @@ import { AliveProvider } from  'solid-alive'
 
 const root = document.getElementById('root')
 
-  // includes, 默认缓存所有
+  // include, 不传 默认缓存所有: include={['/','/about']}
+  // When the data decreases, the reduced cache data will be automatically deleted
 render(() => 
-  <AliveProvider>
+  <AliveProvider include={[]}>
     <App />
   </AliveProvider>
 , root!)

@@ -1,27 +1,22 @@
-import { JSX } from 'solid-js'
+import { JSX, Accessor } from 'solid-js'
 
-interface pub{
-  aliveIds?: Array<string> | null
-}
-
-export interface ProveiderProps  {
+export interface ProveiderProps {
   children: JSX.Element
-  includes?:pub['aliveIds']
+  include?: Array<string> | null
 }
 
-export type tActivated = "onActivated" | "onDeactivated"
+export type tActivated = 'onActivated' | 'onDeactivated'
 
 export interface NodeInfo {
   id: string
-  loaded?: boolean
   owner: any
   component?: ((props: any) => JSX.Element) | null
   element?: JSX.Element | null
-  subIds?: Set<string> | null
+  subIds?: Array<string> | null
   dispose?: (() => void) | null
-  onActivated?: null | Set<() => void>
-  onDeactivated?: null | Set<() => void>
-  fatherId?: string
+  onActivated?: Array<() => void> | null
+  onDeactivated?:  Array<() => void> | null
+  // fatherId?: string
 }
 
 export interface SetElement {
@@ -33,22 +28,23 @@ export interface StoreProps {
 }
 
 export interface IInfo {
-  frozen: boolean 
-  cbOnOff: 'on' | 'off' 
-  currComponentId: string | symbol 
+  frozen: boolean
+  cbOnOff: 'on' | 'off'
+  currComponentId: string | symbol,
+  aliveIds?:Array<string> | null
 }
 
 export type TSetInfo = <T extends keyof IInfo>(key: T, value: IInfo[T]) => void
 
-export interface ContextProps extends pub {
+export interface ContextProps{
   elements: StoreProps
   info: IInfo
   symbolClose: symbol
-  setInfo: TSetInfo
+  // setInfo: TSetInfo
   insertElement: (d: NodeInfo) => void
   removeAliveElements: (ids?: Array<IAliveElementIds>) => void
-  insertCacheCb: (id: string) => void
-  setCb:(t: tActivated, cb: () => void)=>void
+  // insertCacheCb: (id: string) => void
+  setCb: (t: tActivated, cb: () => void) => void
 }
 
 interface IActive {

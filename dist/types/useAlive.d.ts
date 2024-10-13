@@ -7,8 +7,8 @@ export declare function onDeactivated(fn: () => void): void;
  * @returns onDeactivated 离开
  */
 export declare function useAlive(): {
-    onActivated: typeof onActivated;
-    onDeactivated: typeof onDeactivated;
+    onActivated: (cb: () => void) => void;
+    onDeactivated: (cb: () => void) => void;
     removeAliveElements: (ids?: Array<import("./default").IAliveElementIds>) => void;
-    aliveFrozen: () => void;
+    aliveFrozen: () => boolean;
 };
