@@ -22,7 +22,8 @@ export default function AliveProvider(props: ProveiderProps) {
       frozen: false,
       cbOnOff: "on",
       currComponentId: symbolClose,
-      aliveIds: null
+      aliveIds: null,
+      first:true
     }
   var insertElement = (action: NodeInfo) => {
     setElements([action.id], { ...elements[action.id], ...action })
@@ -51,7 +52,7 @@ export default function AliveProvider(props: ProveiderProps) {
     var cbOnOff = info.cbOnOff
     var id = info.currComponentId
     if (cbOnOff === "on" && typeof id === "string" && cb) {
-      !elements[id] && setElements(id, {})
+      !elements[id] && setElements({ [id]: { id } })
       setElements(
         produce(d => {
           d[id as string][t] = [...(d[id as string][t] || []), on([], cb)]

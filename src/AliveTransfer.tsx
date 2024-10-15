@@ -23,32 +23,38 @@ export default function aliveTransfer(
   return function <T>(props: T) {
     var { info, elements, symbolClose, insertElement } =
       useContext<ContextProps>(Context)
-
     if (Array.isArray(info.aliveIds) && !info.aliveIds.includes(id))
       return Component(props)
 
     if (elements[id]) {
-      info.currComponentId = symbolClose
       info.frozen
         ? !elements[id].subIds?.length && (info.frozen = false)
-        : Promise.resolve().then(()=> elements[id].onActivated?.forEach(cb => cb()))
+        : Promise.resolve().then(() =>
+            elements[id].onActivated?.forEach((cb) => cb())
+          )
     } else {
       info.currComponentId = id
-      createRoot(dispose => {
+      createRoot((dispose) => {
         insertElement({
           id,
           dispose,
           owner: getOwner(),
           element: Component(props),
-          subIds: Array.isArray(subIds) ? subIds : null
+          subIds: Array.isArray(subIds) ? subIds : null,
         })
       })
     }
 
     onCleanup(() => {
       if (info.frozen) return
-      info.currComponentId = symbolClose
-      elements[id]?.onDeactivated?.forEach(cb => cb())
+      if (info.first) {
+        info.currComponentId = symbolClose
+        info.first = false
+      }
+      !elements[id].subIds?.length && (info.first = true)
+      info.cbOnOff = "off"
+      elements[id]?.onDeactivated?.forEach((cb) => cb())
+      info.cbOnOff = "on"
     })
 
     return (

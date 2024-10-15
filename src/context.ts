@@ -8,6 +8,7 @@ var Context = createContext<ContextProps>({
     frozen: false,
     cbOnOff: 'off',
     currComponentId: '',
+    first:true
   },
   insertElement: () => void 0,
   removeAliveElements: () => void 0,
