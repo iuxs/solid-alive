@@ -1,18 +1,20 @@
-import { createContext } from 'solid-js'
-import { ContextProps } from './default'
+import { createContext } from "solid-js"
+import { Context } from "./types"
 
-var Context = createContext<ContextProps>({
+export const CURRENTID = Symbol("currentId")
+export const SETACTIVECB = Symbol("setActiveCb")
+
+export default createContext<Context>({
   elements: {},
-  symbolClose: Symbol('close'),
-  info: {
-    frozen: false,
-    cbOnOff: 'off',
-    currComponentId: '',
-    first:true
-  },
-  insertElement: () => void 0,
-  removeAliveElements: () => void 0,
-  setCb:()=>void 0
+  setElements: () => void 0,
+  setActiveCb: () => void 0,
+  aliveIds: ()=> void 0,
 })
 
-export default Context
+export const ChildContext = createContext<{
+  [CURRENTID]: string | undefined
+  [SETACTIVECB]: Context["setActiveCb"]
+}>({
+  [CURRENTID]: undefined,
+  [SETACTIVECB]: () => void 0,
+})
