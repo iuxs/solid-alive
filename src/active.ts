@@ -7,14 +7,15 @@ function _(t: Activate, cb: () => void) {
   untrack(() => {
     var ctx = useContext(ChildContext),
       currentId = ctx[CURRENTID]
+
     if (!currentId) return
-    ctx[SETACTIVECB](currentId, t, cb, "add")
+    ctx[SETACTIVECB]?.(currentId, t, cb, "add")
     t === "onActivated" &&
       createEffect(() => {
         nextTick(cb)
       })
     onCleanup(() => {
-      ctx[SETACTIVECB](currentId!, t, cb, "delete")
+      ctx[SETACTIVECB]?.(currentId!, t, cb, "delete")
       ;(cb as any) = null
     })
   })

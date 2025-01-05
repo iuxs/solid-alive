@@ -8,7 +8,22 @@ import {
 } from "solid-js"
 import Context, { ChildContext, SETACTIVECB, CURRENTID } from "./context"
 import { produce } from "solid-js/store"
-import { Element } from "./types"
+import { Context as IContext, Element } from "./types"
+
+var initComponent = (
+  component: () => JSX.Element,
+  cb?: IContext["setActiveCb"],
+  id?: string
+) => (
+  <ChildContext.Provider
+    value={{
+      [CURRENTID]: id,
+      [SETACTIVECB]: cb,
+    }}
+  >
+    {component()}
+  </ChildContext.Provider>
+)
 
 export default function aliveTransfer(
   Component: <T>(props: T) => JSX.Element,
@@ -17,7 +32,9 @@ export default function aliveTransfer(
 ) {
   return function <T>(props: T) {
     var ctx = useContext(Context)
-    if (!ctx.aliveIds()?.includes(id)) return Component(props)
+
+    if (!ctx.aliveIds()?.includes(id))
+      return initComponent(() => Component(props))
     if (ctx.elements[id]) {
       ctx.elements[id].onActivated?.forEach((cb) => cb())
     } else {
@@ -30,15 +47,10 @@ export default function aliveTransfer(
             data[id].dispose = dispose
             data[id].id = id
             data[id].owner = getOwner()
-            data[id].element = (
-              <ChildContext.Provider
-                value={{
-                  [CURRENTID]: id,
-                  [SETACTIVECB]: ctx.setActiveCb,
-                }}
-              >
-                {Component(props)}
-              </ChildContext.Provider>
+            data[id].element = initComponent(
+              () => Component(props),
+              ctx.setActiveCb,
+              id
             )
           })
         )

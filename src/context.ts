@@ -1,4 +1,5 @@
 import { createContext } from "solid-js"
+
 import { Context } from "./types"
 
 export const CURRENTID = Symbol("currentId")
@@ -13,7 +14,7 @@ export default createContext<Context>({
 
 export const ChildContext = createContext<{
   [CURRENTID]: string | undefined
-  [SETACTIVECB]: Context["setActiveCb"]
+  [SETACTIVECB]?: Context["setActiveCb"]
 }>({
   [CURRENTID]: undefined,
   [SETACTIVECB]: () => void 0,

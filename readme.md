@@ -5,19 +5,14 @@
 ### 描述(describe)
 - 用于 solid 组件缓存,只测试过2级路由缓存
 - AliveProvider 
-  - include : 数组, 不传默认缓存所有,  ['/','/about'], 当数据变少时, 会自动去删除少的数据缓存
-- AliveComponent 不要在 有缓存 的组件中使用
+  - include : 数组,  ['/','/about'], 当数据变少时, 会自动去删除少的数据缓存
 - 在 useAlive 
-  - removeAliveElements: 函数, 可传一个参数, 不传就删除所有缓存 :
-    removeAliveElements(['/home'])
   - onActivated
   - onDeactivated
-  - aliveForzen: 暂时不响应 路由数据变化, aliveForzen()
 
 - 子父 缓存/删除 问题
   -  如果某组件下有子组件,在父的 aliveTransfer中, 
     第三个参数,为对象 写上子组件的唯一id: {children:['/childrenId','asf',...]}
-  -  使用见下图, 也可用 removeAliveElements 删除
 
 
 
@@ -30,8 +25,6 @@ import { AliveProvider } from  'solid-alive'
 
 const root = document.getElementById('root')
 
-  // include, 不传 默认缓存所有: include={['/','/about']}
-  // When the data decreases, the reduced cache data will be automatically deleted
 render(() => 
   <AliveProvider include={[]}>
     <App />
@@ -93,10 +86,6 @@ import {  onActivated,onDeactivated,useAlive, AliveComponent } from "solid-alive
 export default function Single() {
   const { removeAliveElements,aliveFrozen } = useAlive()
 
-  const click = () => {
-    removeAliveElements(['/about']) // delete '/about'; 删除 /about
-    // removeAliveElements() // delete all alive element; 会删除所有缓存的组件
-  }
 
   //todo call 这个会被调用
   onActivated(()=>{
@@ -114,10 +103,6 @@ export default function Single() {
   return (
     <div>
       <h2>Single</h2>
-      { /** 这个 AliveComponent 最好是在 未缓存的组件 中使用, 不然生命周期不同步  */ }
-      <AliveComponent id={'home1'}>
-        <Home />
-      </AliveComponent>
       <input type="text" style={{ border: '2px solid red' }} />
     </div>
   )
@@ -156,20 +141,6 @@ const App: Component = () => {
   const { aliveFrozen } = useAlive()
 
   const [data, setData] = createStore<MenuData[]>([])
-  const a: MenuData = {
-    id: 2,
-    text: 'ABOUT',
-    path: '/about',
-    realPath: '/About/index.tsx',
-    parentId: null,
-  }
- const addRoute =()=>{
-    aliveFrozen() // 暂时不响应下面数据变化
-    setData(d => {
-      return [...d, a]
-    })
-  }
-
   return (
     <Router>
       <Route component={Client}>

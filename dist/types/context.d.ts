@@ -5,5 +5,5 @@ declare const _default: import("solid-js").Context<Context>;
 export default _default;
 export declare const ChildContext: import("solid-js").Context<{
     [CURRENTID]: string | undefined;
-    [SETACTIVECB]: Context["setActiveCb"];
+    [SETACTIVECB]?: Context["setActiveCb"];
 }>;
