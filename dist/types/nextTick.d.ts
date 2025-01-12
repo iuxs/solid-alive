@@ -1,1 +1,2 @@
-export declare function nextTick(cb: () => void): void;
+declare const nextTick: (cb: () => void) => void;
+export default nextTick;

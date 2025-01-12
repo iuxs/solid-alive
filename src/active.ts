@@ -1,19 +1,16 @@
-import { createEffect, onCleanup, untrack, useContext } from "solid-js"
-import { ChildContext, CURRENTID, SETACTIVECB } from "./context"
-import { nextTick } from "./nextTick"
+import { onCleanup, untrack, useContext } from "solid-js"
+import Context, { ChildContext, CURRENTID, SETACTIVECB } from "./context"
+import nextTick from "./nextTick"
 import { Activate } from "./types"
 
 function _(t: Activate, cb: () => void) {
   untrack(() => {
     var ctx = useContext(ChildContext),
       currentId = ctx[CURRENTID]
-
     if (!currentId) return
     ctx[SETACTIVECB]?.(currentId, t, cb, "add")
-    t === "onActivated" &&
-      createEffect(() => {
-        nextTick(cb)
-      })
+
+    t === "onActivated" && nextTick(cb)
     onCleanup(() => {
       ctx[SETACTIVECB]?.(currentId!, t, cb, "delete")
       ;(cb as any) = null
@@ -27,4 +24,9 @@ export function onActivated(cb: () => void) {
 
 export function onDeactivated(cb: () => void) {
   _("onDeactivated", cb)
+}
+
+export function useAliveFrozen() {
+  var info = useContext(Context).info
+  return () => (info.frozen = true)
 }

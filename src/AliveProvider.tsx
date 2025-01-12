@@ -1,14 +1,20 @@
 import { createStore, produce } from "solid-js/store"
-import { ProveiderProps, Activate, Element } from "./types"
+import { ProveiderProps, Activate, Element, Info } from "./types"
 import Context from "./context"
-import { createEffect } from "solid-js"
+import { createEffect} from "solid-js"
 
+/**
+ * @description Alive
+ * @param children jsx.element
+ * @param {Arrya<string> | null} [include]  哪些路由要缓存, 默认不缓存, ['/','/about',...]
+ * @param {string} [transitionEnterName] 动画名称 transitionEnterName="appear"
+ */
 export default function AliveProvider(props: ProveiderProps) {
   const [elements, setElements] = createStore<Record<string, Element>>(),
+    info: Info = { frozen: false },
     delElements = (ids?: Array<string>) => {
       if (Array.isArray(ids))
         for (var id of ids) {
-          delElements(elements[id]?.subsets)
           elements[id]?.dispose?.()
           setElements({ [id]: undefined })
         }
@@ -43,10 +49,12 @@ export default function AliveProvider(props: ProveiderProps) {
   return (
     <Context.Provider
       value={{
+        info,
         elements,
         setElements,
         setActiveCb,
         aliveIds: () => props.include,
+        transitionEnterName: () => props.transitionEnterName,
       }}
     >
       {props.children}
