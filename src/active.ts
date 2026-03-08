@@ -1,32 +1,41 @@
-import { onCleanup, untrack, useContext } from "solid-js"
-import Context, { ChildContext, CURRENTID, SETACTIVECB } from "./context"
-import nextTick from "./nextTick"
-import { Activate } from "./types"
+import { onCleanup, useContext } from "solid-js"
+import { ChildContext, Context } from "./context"
 
-function _(t: Activate, cb: () => void) {
-  untrack(() => {
-    var ctx = useContext(ChildContext),
-      currentId = ctx[CURRENTID]
-    if (!currentId) return
-    ctx[SETACTIVECB]?.(currentId, t, cb, "add")
+import type { Activate } from "./types"
 
-    t === "onActivated" && nextTick(cb)
-    onCleanup(() => {
-      ctx[SETACTIVECB]?.(currentId!, t, cb, "delete")
-      ;(cb as any) = null
-    })
+const _ = (t: Activate, cb: () => void) => {
+  if (typeof cb !== "function") return
+  const { id } = useContext(ChildContext) || {}
+  const ctx = useContext(Context)
+  if (!id || !ctx) {
+    return
+  }
+  ctx.setActive(id, t, cb, "add")
+  onCleanup(() => {
+    ctx.setActive(id, t, cb, "delete")
   })
 }
-
-export function onActivated(cb: () => void) {
-  _("onActivated", cb)
+/**
+ *  @description 进入缓存
+ * ```tsx
+ * import { onActivated } from 'solid-alive'
+ * //use
+ * onActivated(()=> console.log(234))
+ * ```
+ */
+export const onActivated = (cb: () => void) => {
+  _("aSet", cb)
 }
 
-export function onDeactivated(cb: () => void) {
-  _("onDeactivated", cb)
+/**
+ * @description  离开缓存
+ * ```tsx
+ * import { onDeactivated } from 'solid-alive'
+ * onDeactivated(()=> console.log(234))
+ * ```
+ */
+export const onDeactivated = (cb: () => void) => {
+  _("dSet", cb)
 }
 
-export function useAliveFrozen() {
-  var info = useContext(Context).info
-  return () => (info.frozen = true)
-}
+

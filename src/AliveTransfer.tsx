@@ -1,122 +1,244 @@
-import { createEffect, createRoot, JSX, onCleanup, useContext } from "solid-js"
-import Context, {
-  ChildContext,
-  SETACTIVECB,
-  CURRENTID,
-  PARENTID,
-} from "./context"
+import {
+  createComponent,
+  createRoot,
+  onCleanup,
+  runWithOwner,
+  useContext,
+  type JSXElement,
+  createEffect,
+  untrack,
+  getOwner,
+} from "solid-js"
+import { ChildContext, Context } from "./context"
 import { produce } from "solid-js/store"
-import { Context as IContext, Element } from "./types"
+import type { Caches } from "./types"
 
-var initComponent = (
-    component: () => JSX.Element,
-    parentId?: string,
-    cb?: IContext["setActiveCb"],
-    id?: string
-  ) => (
-    <ChildContext.Provider
-      value={{
-        [CURRENTID]: id,
-        [SETACTIVECB]: cb,
-        [PARENTID]: parentId,
-      }}
-    >
-      {component()}
-    </ChildContext.Provider>
-  ),
-  // 拿到dom
-  getDom = (dom: any): HTMLElement | any[] | undefined => {
-    while (typeof dom === "function") {
-      dom = dom()
-    }
-    return dom
-  },
-  animation = false
+/** 标记页面是否是 刚刷新的状态, true :表明刚刷新 */
+let pageRefresh = false
 
 /**
- * @description Alive 组件用的 转换函数; aliveTransfer(Comp, ‘/home’)
- * @param { ()=> JSX.Element } Component () => JSX.Element
- * @param { string } id  string,自己的id 值,一定要唯一
- * @param { Array<string> } [subsets]  [string,...], 子组件的 id值 可不传
- */
-export default function aliveTransfer(
-  Component: <T>(props: T) => JSX.Element,
+ * @description 转换
+ * @param {()=> JSXElement} Component 组件
+ * @param {string} id 唯一id
+ * @param {{isolated?:boolean, disableAnimation?:boolean, transitionEnterName?:string}} [params] 其它参数
+ * @example
+ * ```tsx
+ *  import Home from 'xxx'
+ *  const Home1 = aliveTransfer(Home, 'home')
+ * ```
+ * */
+const aliveTransfer = (
+  Component: <T>(props: T) => JSXElement,
   id: string,
-  subsets?: Array<string> | null
-) {
-  return function <T>(props: T) {
-    var ctx = useContext(Context),
-      parentId = useContext(ChildContext)[CURRENTID],
-      transitionEnterName = ctx.transitionEnterName() as string
-
-    if (!ctx.aliveIds()?.includes(id))
-      return initComponent(() => Component(props))
-
-    if (
-      parentId &&
-      ctx.elements[id]?.parentId &&
-      ctx.elements[id].parentId !== parentId
-    ) {
+  params?: {
+    /** 成一个独立缓存组件 */
+    isolated?: boolean
+    /** 禁用动画 */
+    disableAnimation?: boolean
+    /** 动画名称, 要 css keyframes */
+    transitionEnterName?: string
+    /** 当前组件不去管制 滚动条 */
+    stopSaveScroll?: boolean
+  },
+) => {
+  params?.isolated || (pageRefresh = true)
+  return function <T extends Record<string, any>>(props: T) {
+    if (!id) {
+      console.error(`[solid-alive]: id:'${id}' 不正确`)
       return null
     }
+    const ctx = useContext(Context)
+    // 如果父路由缓存,而子路由没有缓存, 将会有问题
+    if (!ctx || !ctx.include().has(id)) return Component(props)
 
-    if (ctx.elements[id]) {
-      // 冻结, 在 路由 更新 时, 可用 这个 让 正在 使用的缓存 页面不刷新
-      ctx.info.frozen
-        ? ctx.elements[id].subsets?.some((_id) => ctx.elements[_id]) ||
-          (ctx.info.frozen = false)
-        : ctx.elements[id].onActivated?.forEach((cb) => cb())
+    const ani = params?.transitionEnterName || ctx.aniName()
+    // 父级的, 只在这里有,如果没有表示非 alive
+    const parentCtx = useContext(ChildContext)
+    /**如果 当前组件是属于当前路由的 */
+    const myRoute = () =>
+      !parentCtx?.id || ctx.caches[id]?.parentId === parentCtx.id
+
+    /** 加id */
+    const addCurrentIds = (id: string) =>
+      params?.isolated || ctx.currentIds.add(id)
+
+    /** 有数据了 */
+    if (ctx.caches[id]) {
+      addCurrentIds(id)
     } else {
-      ctx.setElements({
-        [id]: { id, subsets: Array.isArray(subsets) ? subsets : null },
-      })
+      /** 当没有缓存时 */
+      const parentId = params?.isolated ? null : [...ctx.currentIds].at(-1)
 
-      createRoot((dispose) => {
-        ctx.setElements(
-          produce((data: Record<string, Element>) => {
-            data[id].dispose = dispose
-            data[id].parentId = Object.values(ctx.elements).find((item) =>
-              item.subsets?.includes(id)
-            )?.id
-            data[id].element = initComponent(
-              () => Component(props),
-              data[id].parentId,
-              ctx.setActiveCb,
-              id
-            )
-          })
+      parentId &&
+        ctx.caches[parentId] &&
+        ctx.setCaches(
+          produce((data: Caches) => {
+            const _ = data[parentId]
+            _.childIds ? _.childIds.add(id) : (_.childIds = new Set([id]))
+          }),
         )
+
+      addCurrentIds(id)
+      ctx.setCaches({
+        [id]: { id, parentId, init: null } as any,
       })
+      createRoot((dispose) =>
+        ctx.setCaches(
+          produce((data: Caches) => {
+            data[id].dispose = dispose
+            data[id].owner = getOwner()
+            data[id].component = (
+              <ChildContext.Provider
+                value={{ id }}
+                children={createComponent(Component, props)}
+              />
+            )
+          }),
+        ),
+      )
     }
-    var _animation = (dom?: HTMLElement | any[] | undefined) => {
-      if (!(dom instanceof HTMLElement) || animation) return
-      animation = true
-      dom.classList.add(transitionEnterName)
-      var _ = () => {
-        dom.removeEventListener("animationend", _)
-        dom.classList.remove(transitionEnterName)
-        animation = false
+
+    /** 滚动条, activated 获取, deactivated 保存滚动数据 */
+    const setScrollContain = (t: "set" | "save") => {
+      const sn = ctx.scrollName
+      if (!sn || ctx.caches[id].childIds?.size || params?.stopSaveScroll) return
+      const dom = document.querySelector(sn) as HTMLElement
+      if (!dom)
+        return console.warn(
+          `[solid-alive]:未找到为scrollContainerName=${sn} 的HTML元素`,
+        )
+
+      t === "set"
+        ? requestAnimationFrame(() =>
+            dom.scrollTo(ctx.caches[id].scrollContainer || { left: 0, top: 0 }),
+          )
+        : ctx.setCaches(
+            produce((data: Caches) => {
+              const { scrollLeft, scrollTop } = dom
+              data[id].scrollContainer = {
+                left: scrollLeft,
+                top: scrollTop,
+              }
+            }),
+          )
+    }
+
+    /** 上次动画函数 */
+    let prevAniFn: (() => void) | null = null
+    /** 动画 */
+    const animation = () => {
+      if (ani && !params?.disableAnimation) {
+        // 找最顶的父级id
+        let _id = id
+        while (_id) {
+          const parentId = ctx.caches[_id]?.parentId
+          if (!parentId) break
+          _id = parentId
+        }
+        //动画函数
+        ;((dom: HTMLElement | any[]) => {
+          if (!(dom instanceof HTMLElement)) return
+          dom.classList.add(ani)
+          prevAniFn = () => {
+            if (!prevAniFn) return
+            dom.removeEventListener("animationend", prevAniFn)
+            dom.classList.remove(ani)
+          }
+          dom.addEventListener("animationend", prevAniFn)
+        })((ctx.caches[_id]?.component as any)?.())
       }
-      dom.addEventListener("animationend", _)
     }
 
-    transitionEnterName &&
-      !ctx.info.frozen &&
-      createEffect(() => {
-        if (animation) return
-        var parentId: string | undefined = id
-        do {
-          ctx.elements[parentId].parentId ||
-            _animation(getDom(ctx.elements[parentId].element))
+    const setEl = () => {
+      if ((ctx.caches[id]?.component as any)?.()) {
+        ctx.setCaches(
+          produce((data: Caches) => {
+            data[id].init = true
+            data[id].hasEl = true
+            data[id].owner = getOwner()
+            for (const cb of data[id].aOnceSet || []) {
+              cb()
+            }
+            delete data[id]["aOnceSet"]
+          }),
+        )
+        return true
+      }
+    }
 
-          parentId = ctx.elements[parentId].parentId
-        } while (parentId)
-      })
-
-    onCleanup(() => {
-      ctx.info.frozen || ctx.elements[id]?.onDeactivated?.forEach((cb) => cb())
+    createEffect(() => {
+      const cache = ctx.caches[id]
+      if (!cache) {
+        console.warn(`[solid-alive]: include中 id = ${id} 的值不存在`)
+        return
+      }
+      if (!myRoute()) return
+      if (pageRefresh && !params?.isolated && cache.childIds?.size) {
+        pageRefresh = false
+      }
+      if (!cache.init && (cache.hasEl || setEl())) {
+        untrack(() => {
+          animation()
+          setScrollContain("set")
+          const { scrollDtvs, aSet } = cache
+          /** 对 指令加的dom, 保存滚动数据 */
+          for (const item of scrollDtvs || []) {
+            item[0].scrollTo(item[1])
+          }
+          for (const cb of aSet || []) {
+            cb()
+          }
+        })
+      }
     })
 
-    return ctx.elements[id].element
+    onCleanup(() => {
+      if (!params?.isolated && (pageRefresh || !ctx.caches[id])) return
+      prevAniFn?.()
+      prevAniFn = null
+      const cache = ctx.caches[id]
+      if (ctx.currentIds.has(id)) {
+        if (cache.parentId) {
+          ctx.currentIds.delete(id)
+          // 循环删除 currentIds 中的子id
+          const del = (ids: Set<string>) => {
+            for (const _id of ids) {
+              ctx.currentIds.delete(_id)
+              const childIds = ctx.caches[_id]?.childIds
+              childIds?.size && del(childIds)
+            }
+          }
+          cache.childIds?.size && del(cache.childIds)
+        } else {
+          // 在销毁一个组件时, 如果其 没有 父级, 就表明它本身是一个根级别的组件, 就去清空 currentIds
+          ctx.currentIds.clear()
+        }
+      }
+
+      if (myRoute()) {
+        setScrollContain("save")
+        /** 对 指令加的dom, 保存滚动数据 */
+        ctx.setCaches(
+          produce((data: Caches) => {
+            for (const value of data[id].scrollDtvs || []) {
+              const { scrollLeft, scrollTop } = value[0]
+              value[1].left = scrollLeft
+              value[1].top = scrollTop
+            }
+            data[id].init = false
+          }),
+        )
+        for (const cb of cache.dSet || []) {
+          cb()
+        }
+      }
+    })
+
+    /** !!!组件是否要展示 , 为什么要写这个 : 因为在多个路由都缓存的情况下, 子路由会加入 所有未被销毁的父路由中, 暂时没有办法解决 */
+    return (
+      myRoute() &&
+      runWithOwner(ctx.caches[id].owner, () => ctx.caches[id].component)
+    )
   }
 }
+export default aliveTransfer

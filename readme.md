@@ -1,176 +1,267 @@
-## solid-alive
+# solid-alive
 
-### 安装(install)
+#### 安装(install)
 
 - pnpm add solid-alive ／ npm i solid-alive / yarn add solid-alive
 
-### 描述(describe)
+#### 参数(describe)
 
-- 用于 solid 组件缓存,只测试过 2 级路由缓存
-- AliveProvider
-  - include : 数组, 默认不缓存, ['/','/about'], 当数据变少时, 会自动去删除少的数据缓存
-  - transitionEnterName 动画, class 名称, 案例下面
-- onActivated
-- onDeactivated
-- useAliveFrozen: hooks 在新增路由时 ,暂时不响应 路由数据变化
-  使用: var aliveFrozen = useAliveFrozen()
-- nextTick
+- **AliveProvider**
+  - children :JSXElement 必须
+  - include : [] 缓存的id 数组, 默认都不缓存, 如 ["home",'abc'], 当你 删除一个缓存时, 父id与子id要一起删除
+  - scrollContainerName : string 保存的滚动条的 left 与 top位置, 如: html, body, .abxasdfe, #asdf
+  - transitionEnterName : string 进入页面的动画名称, 要 css keyframes
 
-### 使用(use)
+    ```css
+    <!-- @/assets/css/index.css -- > 
+    .appear {
+      animation: showkeyframes 0.45s ease;
+    }
+    @keyframes showkeyframes {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    ```
 
-1 /index.tsx,AliveProvider 将 app 包裹
+- **aliveTransfer**
+  - component : JSXElement, 必须
+  - id : string 保存的唯一值, 如 home, 在AliveProvider 的 include 要包括这些id 才会缓存, 必须
+  - params : Object
+    - isolated : 单独组件, 当不是Route组件 时使用, 默认false, !!!不要在已缓存的组件中使用,不要在已缓存的组件中使用,不要在已缓存的组件中使用
+    - disableAnimation : 当前页面不用动画, 默认 false
+    - stopSaveScroll : 当面组件不用去管滚动条 , 默认 false
+    - transitionEnterName : 当面页面的单独动画, 要 css keyframes
 
-```jsx
-import { render } from 'solid-js/web'
-import App from './App'
-import { AliveProvider } from  'solid-alive'
-// import styles from  "css.path"
+- **onActivated** : Function 激活缓存页面时会触发的函数
+- **onDeactivated** : Function 离开缓存页面时会触发的函数
+- **useAliveContext** : Function 父子缓存路由会有 Context 时, 可能会用到的hooks
+- **useAlive** hook
+  - aliveScrollDelete : 删除 保存了的 dom
+  - aliveSaveScrollDtv: 指令 保存 dom 滚动条数据
+  <!-- - aliveFrozen: 在你重新生成 Route 时 , 要执行这个函数 1iuxs -->
 
-const root = document.getElementById('root')
+#### 使用(use)
 
-render(() =>
-  // cache  id = '/'   ;
-  // transitionEnterName={styles.appear}
- <AliveProvider include={['/']} transitionEnterName="xxx">
-   <App />
- </AliveProvider>
-, root!)
-```
+1. AliveProvider
 
-transitionEnterName 动画 css
+```tsx
+// src/index.tsx
+import { render } from "solid-js/web"
 
-```css
-.appear {
-  animation: _appear 0.3s ease-in;
-  -webkit-animation: _appear 0.3s ease-in;
-}
+import { AliveProvider, aliveTransfer } from "solid-alive"
+// import { userInfo } from "./store/userInfo.ts"
 
-@keyframes _appear {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-```
+import "@/assets/css/index.css"
+// import Container from "./layout/Container/index.tsx"
 
-2 /App.tsx ,在 solid-alive 中 有 aliveTransfer, 参数: JSX , id:string, children?:[string..]
-
-```jsx
+import { lazy, type Component, For } from "solid-js"
 import { Route, Router } from "@solidjs/router"
+
+// 使用 import.meta.glob 动态导入所有组件
+// const modules = import.meta.glob<{ default: Component<any> }>([
+//   "./view/**/**.tsx",
+//   "./view/**.tsx",
+// ])
+// const transferRouter = (data: MenuData[]) => (
+//   <For each={data}>
+//     {(item) => {
+//       let module = modules[`./view${item.realPath}`]
+//       if (!module) return null
+//       return (
+//         <Route
+//           component={aliveTransfer(lazy(module), item.id)}
+//           path={item.path}
+//         >
+//           {item.children ? transferRouter(item.children) : null}
+//         </Route>
+//       )
+//     }}
+//   </For>
+// )
+
+// 导入 Home 组件
+// import Home from "@/view/Home/index.tsx"
+// const Home1 = aliveTransfer(Home, "home")
+
+render(
+  () => (
+    <AliveProvider
+      include={["home", "about"]}
+      transitionEnterName="appear"
+      scrollContainerName=".container"
+    >
+      {/* 1 */}
+      {/* <App /> */}
+      {/* 2 */}
+      {/* <Router root={Container} children={routes} /> */}
+      {/* 3 */}
+      <Router children={routes} />
+      {/* 4 */}
+      {/* <Router root={Container}>
+        {transferRouter([])}
+      </Router> */}
+      {/* 5 */}
+      {/* <Router root={Container}>
+        <Route path={"/cart"} component={Hom1}>
+          <Route path={""} component={G1}></Route>
+          <Route path={"h"} component={H1}></Route>
+        </Route>
+      </Router> */}
+    </AliveProvider>
+  ),
+  document.getElementById("root")!,
+)
+```
+
+```tsx
+// src/router/index.ts
+import { lazy } from "solid-js"
 import { aliveTransfer } from "solid-alive"
+const routes = [
+  {
+    path: "/",
+    component: aliveTransfer(
+      lazy(() => import("@/view/Home/index")),
+      "home",
+    ),
+    children: [
+      {
+        path: "",
+        component: aliveTransfer(
+          lazy(() => import("@/view/Home/C")),
+          "c",
+          // {
+          //   "disableAnimation":true,
+          //   "isolated":true,
+          //   "stopSaveScroll":true,
+          //   "transitionEnterName":'appear'
+          // }
+        ),
+      },
+    ],
+  },
+  {
+    path: "/about",
+    component: aliveTransfer(
+      lazy(() => import("@/view/About/index")),
+      "about",
+    ),
+  },
+]
 
-import Home from "./views/Home"
-import Client from "./views/Client"
-import About from "./views/About"
-import Team from "./views/Blog/Team"
-import Blog from "./views/Blog"
-import Single from "./views/Blog/Single"
-import Contact from "./views/Contact"
+export default routes
+```
 
-const HomeTransfer = aliveTransfer(Home, "/"),
-  AboutTsf = aliveTransfer(About, "/about"),
-  BlogTsf = aliveTransfer(Blog, "/blog", ["single", "/contact"]),
-  SingleTsf = aliveTransfer(Single, "single"),
-  ContactTsf = aliveFransfer(Contact, "/contact")
+2. Home 组件
 
-export default function App() {
+```tsx
+// src/view/Home/index.tsx
+import { createContext, useContext } from "solid-js"
+import { onActivated, onDeactivated, useAlive } from "solid-alive"
+
+export const DataContext = createContext<{ value: string }>()
+
+export default function Home(props: any) {
+  //@ts-ignore
+  const { aliveSaveScrollDtv, aliveScrollDelete } = useAlive()
+  const divRef: HTMLDivElement | null = null
+  onActivated(() => {
+    console.log("home - onActivated")
+  })
+
+  onDeactivated(() => {
+    console.log("home - onDeactivated")
+  })
+
+  const delDom = () => {
+    // 删除 aliveSaveScrollDtv 保存的 dom元素
+    divRef && aliveScrollDelete(divRef)
+  }
+
   return (
-    <Router>
-      <Route component={Home} path={"/"} />
-      {/* 单个缓存 single */}
-      <Route component={AboutTsf} path={"/about"} />
-      {/* 父子 缓存 Parent Child Nesting */}
-      <Route component={BlogTsf} path={"/blog"}>
-        <Route component={SingleTsf} path={"single"} />
-        <Route component={ContactTsf} path={"contact"} />
-      </Route>
-    </Router>
+    <ThemeContext.Provider value={{ value: "123" }}>
+      <div>
+        home <button> 清除路由 </button>
+        {props.children}
+        <div
+          ref={(cn) => (divRef = cn)}
+          use:aliveSaveScrollDtv
+          // use:aliveSaveScrollDtv={(v) => (divRef = v)}
+
+          style="height:300px;overflow:scroll"
+        >
+          <div style="height:500px">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ut
+            praesentium debitis dolorum sed dolorem doloremque aliquam beatae,
+            architecto corrupti in qui, harum expedita voluptatum fugit
+            necessitatibus suscipit! Animi, nemo quas! Lorem ipsum dolor sit
+            amet consectetur adipisicing elit. Reiciendis, quaerat asperiores
+            libero, quasi vitae hic officiis repellendus sint tempore totam
+            saepe dolores dolorem magni ab suscipit magnam distinctio
+            exercitationem omnis.
+          </div>
+        </div>
+      </div>
+    </ThemeContext.Provider>
   )
 }
 ```
 
-3 父 /views/Blog/index.tsx
+3. Home 下的 子路由 c.tsx
 
-```jsx
-import { onActivated, onDeactivated, useAliveFrozen } from "@/alives"
-export default function Blog(props: any) {
-  // 新增路由时用
-  const aliveFrozen = useAliveFrozen()
-  const addRouter = () => {
-    aliveFrozen()
-    // add route....
-  }
-  //todo call 这个会被调用
+```tsx
+import { getOwner, useContext } from "solid-js"
+import { onActivated, useAliveContext } from "solid-alive"
+import { DataContext } from "."
+
+export default function C() {
+  // no value
+  const data = useContext(DataContext)
+  // have value
+  const data1 = useAliveContext(DataContext)
+  console.log(data, "data")
+  console.log(data1, "data1")
   onActivated(() => {
-    console.log("Blog-activeated-1")
+    console.log(getOwner())
+    console.log("C - onActivated")
+    // console.log(getOwner())
   })
-
-  //todo call 也会被调用
-  onActivated(() => {
-    console.log("Blog-activeated-2")
-  })
-  // 缓存离开,
-  onDeactivated(() => {
-    console.log("Blog-deactivated")
-  })
-
-  // createEffect(()=>{
-  //   console.log('blog-createEffect')
-  // })
 
   return (
     <div>
-      <h2>Blog</h2>
-      {props.children}
+      ccccccccc <input type="text" /> {data?.value?.()}cccccc
     </div>
   )
 }
 ```
 
-2 动态生成 路由
+4. isolated
 
 ```tsx
-/**  App.tsx */
-import { createEffect, lazy, type Component } from "solid-js"
-import { Route, Router } from "@solidjs/router"
-import { aliveTransfer } from "solid-alive"
+import Aside from "xxxx"
 
-const modules = import.meta.glob<{ default: Component<any> }>([
-  "./views/**/**.tsx",
-  "./views/**.tsx",
-])
+const Aside1 = aliveTransfer(Aside, "aside", {
+  isolated: true,
+  disableAnimation: true,
+})
 
-const transferRouter = (data: IMenuData[]) => (
-  <For each={data}>
-    {(item) => {
-      var module = modules[`./views${item.realPath.replace(/\.\./g, "")}`]
-      if (!module) return []
-      return (
-        <Route
-          component={aliveTransfer(
-            lazy(module),
-            item.path,
-            item.children?.map((item) => item.path)
-          )}
-          path={item.path.split("/").at(-1)}
-        >
-          {item.children ? transferRouter(item.children) : null}
-        </Route>
-      )
-    }}
-  </For>
-)
-
-const App: Component = () => {
+/** 最外的容器 */
+export function Container(props: any) {
   return (
-    <Router>
-      {/* treeData 将 data变成 树结构数据 */}
-      {transferRouter(treeData(data))}
-    </Router>
+    <div class="container">
+      {props.children}
+      <Aside1 />
+    </div>
   )
 }
-
-export default App
 ```
+
+#### 已知问题(issue)
+
+- 父子路由的 context 问题
+- 多个已缓存的路由有子路由时, 未缓存的子路由 会共享子组件
+- 如果父路由缓存, 子路由不缓存时会有 路由组件共享问题

@@ -1,60 +1,106 @@
 import { createStore, produce } from "solid-js/store"
-import { ProveiderProps, Activate, Element, Info } from "./types"
-import Context from "./context"
-import { createEffect} from "solid-js"
+import { createMemo } from "solid-js"
+import { Context } from "./context"
 
-/**
- * @description Alive
- * @param children jsx.element
- * @param {Arrya<string> | null} [include]  哪些路由要缓存, 默认不缓存, ['/','/about',...]
- * @param {string} [transitionEnterName] 动画名称 transitionEnterName="appear"
- */
-export default function AliveProvider(props: ProveiderProps) {
-  const [elements, setElements] = createStore<Record<string, Element>>(),
-    info: Info = { frozen: false },
-    delElements = (ids?: Array<string>) => {
-      if (Array.isArray(ids))
-        for (var id of ids) {
-          elements[id]?.dispose?.()
-          setElements({ [id]: undefined })
-        }
-    },
-    setActiveCb = (
-      id: string,
-      t: Activate,
-      cb: () => void,
-      t1: "add" | "delete"
-    ) => {
-      setElements(
-        produce((data) => {
+import type {
+  AliveProviderProps,
+  Activate,
+  Caches,
+  MapType,
+  SetType,
+} from "./types"
+
+/** 
+ * @description 容器
+ * @param {JSXElement} children 
+ * @param {Array<string>} [include] ['home','about']
+ * @param {string} [transitionEnterName] 动画名称, 要 css keyframes 动画
+ * @param {string} [scrollContainerName] 滚动容器, 如 html, body, .contain, #xxy, ...
+ * @example
+ * ```jsx
+ *  <AliveProvider
+      include={['home','about']}
+      transitionEnterName="ease-show"
+      scrollContainerName=".contain"
+    >
+      <Router root={Contain} children={routes} />
+    </AliveProvider>
+ * ```
+ * */
+export default function (props: AliveProviderProps) {
+  const [caches, setCaches] = createStore<Caches>({}),
+    /** 保存 active的函数  */
+    setActive = (id: string, t: Activate, cb: () => void, t1: SetType) =>
+      setCaches(
+        produce((data: Caches) =>
           data[id][t]
             ? data[id][t][t1](cb)
-            : t1 === "add" && (data[id][t] = new Set([cb]))
-        })
+            : t1 === "add" && (data[id][t] = new Set([cb])),
+        ),
       )
-    }
+  /** 指令的dom */
+  const setDirective = (id: string, dom: HTMLElement, t: MapType) =>
+    setCaches(
+      produce((data: Caches) => {
+        // 新增 指令
+        const cache = data[id]["scrollDtvs"]!
+        if (t === "set") {
+          !cache && (data[id]["scrollDtvs"] = new Map())
+          data[id]["scrollDtvs"]!.set(dom, { left: 0, top: 0 })
+        } else {
+          //删除 指令
+          if (cache?.has(dom)) {
+            cache.delete(dom)
+            !cache.size && delete data[id]["scrollDtvs"]
+          }
+        }
+      }),
+    )
+  /** 删除 */
+  const removeCaches = (ids: Set<string>) =>
+    setCaches(
+      produce((data: Caches) => {
+        const remove = (ss: Set<string>) => {
+          for (const s of ss) {
+            if (!data[s]) continue
+            data[s].dispose()
+            data[s].parentId && data[data[s].parentId]?.childIds?.delete(s)
+            data[s].component = null
+            data[s].owner = null
+            delete data[s]
+          }
+        }
+        remove(ids)
+      }),
+    )
 
-  createEffect<Array<string>>(
-    (prev) => {
-      var arr = Array.isArray(props.include) ? props.include : []
-      if (prev.length > arr.length) {
-        var set = new Set(arr)
-        delElements(prev.filter((id) => !set.has(id)))
+  /** 当 include 变少了, 找出 少了哪些, 然后将少了的 从 caches 中 删除 */
+  const include = createMemo<Set<string>>((prev) => {
+    if (!Array.isArray(props.include)) return new Set([])
+    if (prev?.size) {
+      for (const id of props.include) {
+        prev.delete(id)
       }
-      return arr
-    },
-    Array.isArray(props.include) ? props.include : []
-  )
+      prev.size && removeCaches(prev)
+    }
+    const _set = new Set(props.include)
+    _set.size &&
+      _set.size !== props.include.length &&
+      console.warn("[solid-alive]:include中有值重复")
+    return _set
+  })
 
   return (
     <Context.Provider
       value={{
-        info,
-        elements,
-        setElements,
-        setActiveCb,
-        aliveIds: () => props.include,
-        transitionEnterName: () => props.transitionEnterName,
+        caches,
+        include,
+        currentIds: new Set(),
+        setCaches,
+        setActive,
+        aniName: () => props.transitionEnterName,
+        scrollName: props.scrollContainerName,
+        setDirective,
       }}
     >
       {props.children}

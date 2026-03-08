@@ -1,13 +1,13 @@
-import aliveTransfer from "./aliveTransfer"
 import AliveProvider from "./AliveProvider"
-import { onActivated, onDeactivated, useAliveFrozen } from "./active"
-import nextTick from "./nextTick"
+import aliveTransfer from "./aliveTransfer"
+import { onActivated, onDeactivated } from "./active"
+import { useAlive, useAliveContext } from "./hooks"
 
 export {
-  aliveTransfer,
   AliveProvider,
   onActivated,
   onDeactivated,
-  useAliveFrozen,
-  nextTick
+  useAliveContext,
+  aliveTransfer,
+  useAlive
 }
