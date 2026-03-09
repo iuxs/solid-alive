@@ -5,11 +5,9 @@ import type { Activate } from "./types"
 
 const _ = (t: Activate, cb: () => void) => {
   if (typeof cb !== "function") return
-  const { id } = useContext(ChildContext) || {}
+  const { id, noCache } = useContext(ChildContext) || {}
   const ctx = useContext(Context)
-  if (!id || !ctx) {
-    return
-  }
+  if (noCache || !id || !ctx) return
   ctx.setActive(id, t, cb, "add")
   onCleanup(() => {
     ctx.setActive(id, t, cb, "delete")
@@ -37,5 +35,3 @@ export const onActivated = (cb: () => void) => {
 export const onDeactivated = (cb: () => void) => {
   _("dSet", cb)
 }
-
-

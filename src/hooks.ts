@@ -8,36 +8,35 @@ import { createStore } from "solid-js/store"
  * @description alive hook
  * @example
  * ```jsx
- *  //@ts-ignore
- *  const { aliveScrollDelete, aliveSaveScrollDtv } = useAlive()
- *
  *  export function Fn(){
-  *   const divRef
-  *   const del = () => { divRef && aliveScrollDelete(divRef) }
-  *  
-  *   return <div use:aliveSaveScrollDtv >123</div>
+ *    const divRef
+ *    //@ts-ignore
+ *    const { aliveScrollDelete, aliveSaveScrollDtv } = useAlive()
+ *    const del = () => { divRef && aliveScrollDelete(divRef) }
+ *
+ *    return <div use:aliveSaveScrollDtv={(cn)=>(divRef = cn)} >123</div>
  *  }
  *
  * ```
  */
 export const useAlive = () => {
-  const { id } = useContext(ChildContext) || {}
+  const { id, noCache } = useContext(ChildContext) || {}
   const ctx = useContext(Context1)
 
   return {
     /** 当前id */
     aliveId: id,
-    /** 
-     * @description 删除 dom的滚动条 
+    /**
+     * @description 删除 dom的滚动条
      * @example
      * ```jsx
      * aliveScrollDelete(divRef)
      * ```
      * */
     aliveScrollDelete: (dom: HTMLElement) =>
-      id && ctx?.setDirective(id, dom, "delete"),
-    /** 
-     * @description directive 指令: 保存 dom的滚动条 
+      noCache || (id && ctx && dom && ctx.setDirective(id, dom, "delete")),
+    /**
+     * @description directive 指令: 保存 dom的滚动条
      * @example
      * ```jsx
      *  <div use:aliveSaveScrollDtv >123</div>
@@ -45,11 +44,12 @@ export const useAlive = () => {
      * */
     aliveSaveScrollDtv: (
       el: HTMLElement,
-      v?: () => (v: HTMLElement) => Boolean | void | any,
+      v?: () => ((v: HTMLElement) => Boolean | void | any) | boolean,
     ) => {
-      if (!id) return
-      if (v?.()(el) === false) return
-      ctx?.setDirective(id, el, "set")
+      if (!id || noCache) return
+      const fn = v && v()
+      if (typeof fn === "function" && fn(el) === false) return
+      ctx && ctx.setDirective(id, el, "set")
     },
     /** 在更新 routes 数据 时, 要用到这个 */
     // aliveFrozen: () => {

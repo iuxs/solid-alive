@@ -36,10 +36,10 @@
     - stopSaveScroll : 当面组件不用去管滚动条 , 默认 false
     - transitionEnterName : 当面页面的单独动画, 要 css keyframes
 
-- **onActivated** : Function 激活缓存页面时会触发的函数
-- **onDeactivated** : Function 离开缓存页面时会触发的函数
-- **useAliveContext** : Function 父子缓存路由会有 Context 时, 可能会用到的hooks
-- **useAlive** hook
+- **onActivated** :  激活缓存页面时会触发的函数
+- **onDeactivated** :  离开缓存页面时会触发的函数
+- **useAliveContext** :  父子缓存路由会有 Context 时, 可能会用到的hooks
+- **useAlive**
   - aliveScrollDelete : 删除 保存了的 dom
   - aliveSaveScrollDtv: 指令 保存 dom 滚动条数据
   <!-- - aliveFrozen: 在你重新生成 Route 时 , 要执行这个函数 1iuxs -->
@@ -160,12 +160,14 @@ export default routes
 
 ```tsx
 // src/view/Home/index.tsx
+
 import { createContext, useContext } from "solid-js"
-import { onActivated, onDeactivated, useAlive } from "solid-alive"
+import { onActivated, onDeactivated, useAlive, type Setter } from "solid-alive"
+import type { RouteSectionProps } from "@solidjs/router"
+export const DataContext = createContext<{ data: ()=> string, setData: Setter<string> }>()
 
-export const DataContext = createContext<{ value: string }>()
-
-export default function Home(props: any) {
+export default function Home(props: RouteSectionProps) {
+   const [data, setData] = createSignal("123")
   //@ts-ignore
   const { aliveSaveScrollDtv, aliveScrollDelete } = useAlive()
   const divRef: HTMLDivElement | null = null
@@ -183,7 +185,7 @@ export default function Home(props: any) {
   }
 
   return (
-    <ThemeContext.Provider value={{ value: "123" }}>
+    <ThemeContext.Provider value={{ data, setData }}>
       <div>
         home <button> 清除路由 </button>
         {props.children}
@@ -233,7 +235,7 @@ export default function C() {
 
   return (
     <div>
-      ccccccccc <input type="text" /> {data?.value?.()}cccccc
+      ccccccccc <input type="text" /> {data?.value?.()}cccccc {data1?.value?.()}
     </div>
   )
 }
@@ -242,6 +244,8 @@ export default function C() {
 4. isolated
 
 ```tsx
+import type { RouteSectionProps } from "@solidjs/router"
+// @/layout/Container/index.tsx
 import Aside from "xxxx"
 
 const Aside1 = aliveTransfer(Aside, "aside", {
@@ -250,7 +254,7 @@ const Aside1 = aliveTransfer(Aside, "aside", {
 })
 
 /** 最外的容器 */
-export function Container(props: any) {
+export function Container(props: RouteSectionProps) {
   return (
     <div class="container">
       {props.children}

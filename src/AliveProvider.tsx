@@ -28,16 +28,16 @@ import type {
  * ```
  * */
 export default function (props: AliveProviderProps) {
-  const [caches, setCaches] = createStore<Caches>({}),
-    /** 保存 active的函数  */
-    setActive = (id: string, t: Activate, cb: () => void, t1: SetType) =>
-      setCaches(
-        produce((data: Caches) =>
-          data[id][t]
-            ? data[id][t][t1](cb)
-            : t1 === "add" && (data[id][t] = new Set([cb])),
-        ),
-      )
+  const [caches, setCaches] = createStore<Caches>({})
+  /** 保存 active的函数  */
+  const setActive = (id: string, t: Activate, cb: () => void, t1: SetType) =>
+    setCaches(
+      produce((data: Caches) =>
+        data[id][t]
+          ? data[id][t][t1](cb)
+          : t1 === "add" && (data[id][t] = new Set([cb])),
+      ),
+    )
   /** 指令的dom */
   const setDirective = (id: string, dom: HTMLElement, t: MapType) =>
     setCaches(
@@ -57,17 +57,21 @@ export default function (props: AliveProviderProps) {
       }),
     )
   /** 删除 */
-  const removeCaches = (ids: Set<string>) =>
+  const removeCaches = (ids: Set<string> | Array<string>) =>
     setCaches(
       produce((data: Caches) => {
-        const remove = (ss: Set<string>) => {
+        const remove = (ss: Set<string> | Array<string>) => {
           for (const s of ss) {
             if (!data[s]) continue
-            data[s].dispose()
             data[s].parentId && data[data[s].parentId]?.childIds?.delete(s)
-            data[s].component = null
+            data[s].component = undefined
+            data[s].scrollDtvs = undefined
             data[s].owner = null
-            delete data[s]
+            data[s].hasEl = false
+            if (!data[s].init) {
+              data[s].dispose?.()
+              delete data[s]
+            }
           }
         }
         remove(ids)
@@ -101,6 +105,7 @@ export default function (props: AliveProviderProps) {
         aniName: () => props.transitionEnterName,
         scrollName: props.scrollContainerName,
         setDirective,
+        removeCaches,
       }}
     >
       {props.children}
