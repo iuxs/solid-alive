@@ -244,8 +244,8 @@ export default function C() {
 4. isolated
 
 ```tsx
-import type { RouteSectionProps } from "@solidjs/router"
 // @/layout/Container/index.tsx
+import type { RouteSectionProps } from "@solidjs/router"
 import Aside from "xxxx"
 
 const Aside1 = aliveTransfer(Aside, "aside", {

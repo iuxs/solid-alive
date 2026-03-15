@@ -1,6 +1,6 @@
 {
   "name": "solid-alive",
-  "version": "0.3.59",
+  "version": "0.3.71",
   "author": "1iuxs",
   "description": "solid-alive",
   "type": "module",
@@ -12,11 +12,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
+    "solid",
     "solid-js",
-    "cache",
+    "keep-alive",
     "solid-alive",
-    "solid-keep-alive",
-    "alive"
+    "solid-keep-alive"
   ],
   "files": [
     "package.json",

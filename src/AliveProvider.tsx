@@ -1,5 +1,5 @@
 import { createStore, produce } from "solid-js/store"
-import { createMemo } from "solid-js"
+import { createMemo, runWithOwner } from "solid-js"
 import { Context } from "./context"
 
 import type {
@@ -20,7 +20,7 @@ import type {
  * ```jsx
  *  <AliveProvider
       include={['home','about']}
-      transitionEnterName="ease-show"
+      transitionEnterName="appear"
       scrollContainerName=".contain"
     >
       <Router root={Contain} children={routes} />
@@ -30,7 +30,16 @@ import type {
 export default function (props: AliveProviderProps) {
   const [caches, setCaches] = createStore<Caches>({})
   /** 保存 active的函数  */
-  const setActive = (id: string, t: Activate, cb: () => void, t1: SetType) =>
+  const setActive = (id: string, t: Activate, cb: () => void, t1: SetType) => {
+    if (
+      t === "aOnceSet" &&
+      t1 === "add" &&
+      caches[id].init &&
+      caches[id].hasEl
+    ) {
+      runWithOwner(caches[id].owner, cb)
+      return
+    }
     setCaches(
       produce((data: Caches) =>
         data[id][t]
@@ -38,6 +47,7 @@ export default function (props: AliveProviderProps) {
           : t1 === "add" && (data[id][t] = new Set([cb])),
       ),
     )
+  }
   /** 指令的dom */
   const setDirective = (id: string, dom: HTMLElement, t: MapType) =>
     setCaches(
@@ -64,11 +74,8 @@ export default function (props: AliveProviderProps) {
           for (const s of ss) {
             if (!data[s]) continue
             data[s].parentId && data[data[s].parentId]?.childIds?.delete(s)
-            data[s].component = undefined
-            data[s].scrollDtvs = undefined
-            data[s].owner = null
             data[s].hasEl = false
-            if (!data[s].init) {
+            if (!data[s].init || data[s].noCache) {
               data[s].dispose?.()
               delete data[s]
             }
@@ -81,17 +88,13 @@ export default function (props: AliveProviderProps) {
   /** 当 include 变少了, 找出 少了哪些, 然后将少了的 从 caches 中 删除 */
   const include = createMemo<Set<string>>((prev) => {
     if (!Array.isArray(props.include)) return new Set([])
-    if (prev?.size) {
+    if (prev && prev.size) {
       for (const id of props.include) {
         prev.delete(id)
       }
       prev.size && removeCaches(prev)
     }
-    const _set = new Set(props.include)
-    _set.size &&
-      _set.size !== props.include.length &&
-      console.warn("[solid-alive]:include中有值重复")
-    return _set
+    return new Set(props.include)
   })
 
   return (
@@ -105,7 +108,6 @@ export default function (props: AliveProviderProps) {
         aniName: () => props.transitionEnterName,
         scrollName: props.scrollContainerName,
         setDirective,
-        removeCaches,
       }}
     >
       {props.children}

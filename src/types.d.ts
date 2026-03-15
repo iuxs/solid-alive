@@ -1,10 +1,7 @@
 import type { JSXElement, Accessor, Owner } from "solid-js"
 import type { SetStoreFunction } from "solid-js/store"
-import type { RouteSectionProps } from "@solidjs/router"
 
 export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never
-
-export type RouteProps2<T> = RouteSectionProps<T>
 
 export type AliveProviderProps = {
   /** 子组件 */
@@ -70,8 +67,6 @@ export type ContextProps = Expand<{
   scrollName?: string
   /** 指令函数 */
   setDirective: (id: string, dom: HTMLElement, t: MapType) => void
-  /** 删除 cache,  deep:深度删除 */
-  removeCaches: (ids: Set<string> | Array<string>, deep?: boolean) => void
 }>
 
 export type Activate = "aSet" | "dSet" | "aOnceSet"
