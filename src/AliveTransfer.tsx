@@ -198,8 +198,10 @@ const aliveTransfer = <T extends Record<string, any>>(
 
       // 循环删除 currentIds 中的子id
       // 在销毁一个组件时, 如果其 没有 父级, 就表明它本身是一个根级别的组件, 就去清空 currentIds
-      if (!cache.parentId) ctx.currentIds.clear()
-      else if (ctx.currentIds.has(id)) {
+  
+      if (!cache.parentId) {
+        isolated || ctx.currentIds.clear()
+      } else if (ctx.currentIds.has(id)) {
         const delCurrIds = (ids: Array<string> | Set<string>) => {
           for (const _id of ids) {
             ctx.currentIds.delete(_id)
