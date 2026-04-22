@@ -34,8 +34,6 @@ export type Cache = Expand<{
   owner: Owner | null
   /** 销毁函数 */
   dispose?: () => void
-  /** 只执行一次的 active */
-  aOnceSet?: Set<() => void>
   /** 激活 */
   aSet?: Set<() => void>
   /** 离开 */
@@ -69,7 +67,7 @@ export type ContextProps = Expand<{
   setDirective: (id: string, dom: HTMLElement, t: MapType) => void
 }>
 
-export type Activate = "aSet" | "dSet" | "aOnceSet"
+export type Activate = "aSet" | "dSet"
 export type MapType = "set" | "delete"
 export type SetType = "add" | "delete"
 

@@ -6,14 +6,13 @@ import type { Activate } from "./types"
 const _ = (t: Activate, cb: () => void) => {
   if (typeof cb !== "function") return
   const { id, noCache } = useContext(ChildContext) || {}
-  if (noCache && t !== "aOnceSet") return
+  if (noCache) return
   const ctx = useContext(Context)
   if (!id || !ctx) return
   ctx.setActive(id, t, cb, "add")
-  t !== "aOnceSet" &&
-    onCleanup(() => {
-      ctx.setActive(id, t, cb, "delete")
-    })
+  onCleanup(() => {
+    ctx.setActive(id, t, cb, "delete")
+  })
 }
 /**
  *  @description 进入缓存
@@ -36,15 +35,4 @@ export const onActivated = (cb: () => void) => {
  */
 export const onDeactivated = (cb: () => void) => {
   _("dSet", cb)
-}
-
-/**
- * @description  离开缓存
- * ```tsx
- * import { onActivatedOnce } from 'solid-keepalive'
- * onDeactivated(()=> console.log(234))
- * ```
- */
-export const onActivatedOnce = (cb: () => void) => {
-  _("aOnceSet", cb)
 }

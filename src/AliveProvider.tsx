@@ -31,14 +31,8 @@ export default function (props: AliveProviderProps) {
   const [caches, setCaches] = createStore<Caches>({})
   /** 保存 active的函数  */
   const setActive = (id: string, t: Activate, cb: () => void, t1: SetType) => {
-    if (
-      t === "aOnceSet" &&
-      t1 === "add" &&
-      caches[id].init &&
-      caches[id].hasEl
-    ) {
+    if (t1 === "add" && caches[id].init && caches[id].hasEl) {
       runWithOwner(caches[id].owner, cb)
-      return
     }
     setCaches(
       produce((data: Caches) =>

@@ -159,10 +159,6 @@ const aliveTransfer = <T extends Record<string, any>>(
           produce((data: Caches) => {
             data[id].hasEl = true
             data[id].owner = getOwner()
-            for (const cb of data[id].aOnceSet || []) {
-              cb()
-            }
-            delete data[id].aOnceSet
           }),
         )
         return true
@@ -198,7 +194,6 @@ const aliveTransfer = <T extends Record<string, any>>(
 
       // 循环删除 currentIds 中的子id
       // 在销毁一个组件时, 如果其 没有 父级, 就表明它本身是一个根级别的组件, 就去清空 currentIds
-  
       if (!cache.parentId) {
         isolated || ctx.currentIds.clear()
       } else if (ctx.currentIds.has(id)) {

@@ -3,7 +3,7 @@ import { ChildContext, Context as Context1 } from "./context"
 import { useContext, getOwner, runWithOwner, type Context } from "solid-js"
 
 import { createStore } from "solid-js/store"
-import { onActivatedOnce } from "./active"
+import { onActivated } from "./active"
 
 /**
  * @description alive hook
@@ -70,7 +70,7 @@ export const useAlive = () => {
 export const useAliveContext = <T>(context: Context<T>): T => {
   const [data, setData] = createStore<any>()
 
-  onActivatedOnce(() => {
+  onActivated(() => {
     runWithOwner(getOwner(), () => {
       setData(useContext(context))
     })
