@@ -1,4 +1,4 @@
-import { onCleanup, useContext } from "solid-js"
+import { onCleanup, onMount, useContext } from "solid-js"
 import { ChildContext, Context } from "./context"
 
 import type { Activate } from "./types"
@@ -9,7 +9,9 @@ const _ = (t: Activate, cb: () => void) => {
   if (noCache) return
   const ctx = useContext(Context)
   if (!id || !ctx) return
-  ctx.setActive(id, t, cb, "add")
+  onMount(()=>{
+    ctx.setActive(id, t, cb, "add")
+  })
   onCleanup(() => {
     ctx.setActive(id, t, cb, "delete")
   })
